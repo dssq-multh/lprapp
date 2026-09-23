@@ -337,6 +337,10 @@ async function startCamera() {
     // Refresh devices once permissions are granted so labels appear
     setupCameraDevices();
 
+    // Reset FPS calculation for fresh stream
+    frameCount = 0;
+    fpsLastTime = performance.now();
+
     // Start recognition loop
     requestRecognitionLoop();
   } catch (err) {
@@ -382,6 +386,8 @@ function stopCamera() {
     clearOverlay();
   }
 
+  frameCount = 0;
+  fpsLastTime = performance.now();
   engineStatusBadge.className = 'status-badge ready';
   engineStatusText.textContent = 'Ready';
   scanFpsText.textContent = '-- FPS';
@@ -430,13 +436,28 @@ async function processCurrentFrame() {
     const latency = Math.round(t1 - t0);
     scanLatencyText.textContent = `${latency} ms`;
 
-    // Calculate FPS
-    frameCount++;
-    if (t1 - fpsLastTime >= 1000) {
-      const currentFps = Math.round((frameCount * 1000) / (t1 - fpsLastTime));
-      scanFpsText.textContent = `${currentFps} FPS`;
-      frameCount = 0;
-      fpsLastTime = t1;
+    // Calculate FPS or s/frame if below 1 FPS
+    if (activeMode === 'camera') {
+      frameCount++;
+      const elapsed = t1 - fpsLastTime;
+      if (elapsed >= 1000) {
+        const rawFps = (frameCount * 1000) / elapsed;
+        if (rawFps < 1) {
+          const secPerFrame = elapsed / (frameCount * 1000);
+          scanFpsText.textContent = `${secPerFrame.toFixed(1)} s/frame`;
+        } else {
+          scanFpsText.textContent = `${Math.round(rawFps)} FPS`;
+        }
+        frameCount = 0;
+        fpsLastTime = t1;
+      }
+    } else {
+      if (latency >= 1000) {
+        const secPerFrame = latency / 1000;
+        scanFpsText.textContent = `${secPerFrame.toFixed(1)} s/frame`;
+      } else {
+        scanFpsText.textContent = '-- FPS';
+      }
     }
 
     // Render bounding boxes with Green Tick or Red Cross
@@ -674,6 +695,8 @@ async function loadStaticImage(url) {
   }
 
   activeMode = 'static';
+  frameCount = 0;
+  fpsLastTime = performance.now();
   document.body.classList.add('static-active-mode');
   document.body.classList.remove('camera-active-mode');
   if (rightPanel) rightPanel.classList.add('mobile-active');
