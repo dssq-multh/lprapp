@@ -5,7 +5,7 @@
     "groundTruth": [
       "CAL8942"
     ],
-    "durationMs": 163,
+    "durationMs": 222,
     "detections": [
       {
         "text": "CAL8942",
@@ -28,7 +28,7 @@
     "groundTruth": [
       "B391KLT"
     ],
-    "durationMs": 116,
+    "durationMs": 140,
     "detections": [
       {
         "text": "B39IKLT",
@@ -53,12 +53,12 @@
       "SMJ6650C",
       "SBU999J"
     ],
-    "durationMs": 121,
+    "durationMs": 134,
     "detections": [
       {
         "text": "SBU999J",
         "score": 0.64,
-        "minConf": 0.8,
+        "minConf": 0.81,
         "box": {
           "left": 763.2376934086932,
           "top": 337.2827557999708,
@@ -69,17 +69,17 @@
         "matchedPlate": "SBU999J"
       },
       {
-        "text": "SDN66TOH",
+        "text": "SDN6618H",
         "score": 0.57,
-        "minConf": 0.75,
+        "minConf": 0.76,
         "box": {
           "left": 252.96419806202437,
           "top": 350.80758496074293,
           "width": 39.355882641272046,
           "height": 25.162029231371207
         },
-        "isMatch": false,
-        "matchedPlate": null
+        "isMatch": true,
+        "matchedPlate": "SDN6618H"
       },
       {
         "text": "S80999J",
@@ -103,7 +103,7 @@
       "SMJ6650C",
       "ES3960A"
     ],
-    "durationMs": 109,
+    "durationMs": 135,
     "detections": [
       {
         "text": "SMJ665OC",
@@ -129,7 +129,7 @@
       "SNF9945S",
       "SLX9361E"
     ],
-    "durationMs": 121,
+    "durationMs": 149,
     "detections": [
       {
         "text": "SML6579R",
@@ -155,7 +155,7 @@
       "SKG516L",
       "SLX9361E"
     ],
-    "durationMs": 160,
+    "durationMs": 141,
     "detections": [
       {
         "text": "ES3960A",
@@ -182,32 +182,6 @@
         },
         "isMatch": true,
         "matchedPlate": "SNF9945S"
-      },
-      {
-        "text": "SKG56L",
-        "score": 0.7,
-        "minConf": 0.83,
-        "box": {
-          "left": 911.4409349817556,
-          "top": 281.91207807954993,
-          "width": 32.49613834251522,
-          "height": 12.312831050220211
-        },
-        "isMatch": false,
-        "matchedPlate": null
-      },
-      {
-        "text": "SSEYE",
-        "score": 0.64,
-        "minConf": 0.6,
-        "box": {
-          "left": 69.39248105958579,
-          "top": 221.08753249125172,
-          "width": 27.68385275303369,
-          "height": 13.802780954510183
-        },
-        "isMatch": false,
-        "matchedPlate": null
       }
     ]
   },
@@ -218,7 +192,7 @@
       "SNF9945S",
       "SKG516L"
     ],
-    "durationMs": 188,
+    "durationMs": 200,
     "detections": [
       {
         "text": "SNF9945S",
@@ -256,7 +230,7 @@
       "SNF5763B",
       "SMK8800G"
     ],
-    "durationMs": 113,
+    "durationMs": 185,
     "detections": [
       {
         "text": "SJV7999M",
@@ -279,7 +253,7 @@
     "groundTruth": [
       "SLE5647H"
     ],
-    "durationMs": 144,
+    "durationMs": 125,
     "detections": [
       {
         "text": "SLE5647H",
@@ -304,7 +278,7 @@
       "SNY9977A",
       "SMU5178Z"
     ],
-    "durationMs": 156,
+    "durationMs": 138,
     "detections": [
       {
         "text": "SMU5178Z",
@@ -354,7 +328,7 @@
       "SJS561D",
       "SND33T"
     ],
-    "durationMs": 137,
+    "durationMs": 191,
     "detections": [
       {
         "text": "SJS561D",
@@ -377,7 +351,7 @@
     "groundTruth": [
       "SND33T"
     ],
-    "durationMs": 117,
+    "durationMs": 139,
     "detections": [
       {
         "text": "SND33T",

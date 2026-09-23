@@ -143,9 +143,11 @@ function preprocessPlateCrop(sourceCanvas, box, quad) {
   const sw = Math.min(sourceCanvas.width - sx, box.width + padX * 2);
   const sh = Math.min(sourceCanvas.height - sy, box.height + padY * 2);
 
-  const targetH = 48;
+  // For 1-line rectangular plates, 48px height gives the single line ~40-48px.
+  // For 2-line stacked plates, each line needs at least 48px plus plate margins, requiring 128px.
+  const targetH = isSquare ? 128 : 48;
   const targetW = isSquare
-    ? Math.max(64, Math.round(targetH * aspect))
+    ? Math.max(128, Math.round(targetH * aspect))
     : Math.max(180, Math.round(targetH * aspect * (sw / Math.max(1, box.width))));
 
   const c = document.createElement('canvas');
