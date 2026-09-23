@@ -62,15 +62,6 @@
                 </span>
                 <span id="btnRecognizeText">Recognize!</span>
               </button>
-
-              <div class="helper-buttons">
-                <button id="btnSamplePlates" class="btn btn-ghost btn-sm" title="Insert sample plates (e.g. CAL8942, B391KLT)">
-                  + Sample Plates
-                </button>
-                <button id="btnClearPlates" class="btn btn-ghost btn-sm text-danger" title="Clear plate list">
-                  Clear
-                </button>
-              </div>
             </div>
 
             <div class="plate-secondary-bar">
@@ -96,7 +87,6 @@
             
             <div class="textarea-footer">
               <span class="footer-tip">💡 Matches are whitespace and case-insensitive</span>
-              <span id="matchStatsBadge" class="match-stats">0 matches found</span>
             </div>
           </div>
         </section>
@@ -202,6 +192,11 @@
             <div id="streamBadge" class="stream-active-badge" style="display:none;">
               <span class="pulsing-record-dot"></span>
               <span id="streamBadgeText">LIVE RECOGNIZING</span>
+            </div>
+
+            <!-- Floating Pinch-to-Zoom Indicator Badge -->
+            <div id="zoomBadge" class="zoom-badge" style="display:none;">
+              <span id="zoomBadgeText">1.0×</span>
             </div>
           </div>
         </section>

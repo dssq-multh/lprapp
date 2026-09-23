@@ -5,16 +5,16 @@ const engineStatusBadge = document.getElementById('engineStatusBadge');
 const engineStatusText = document.getElementById('engineStatusText');
 const platesTextarea = document.getElementById('platesTextarea');
 const plateCountBadge = document.getElementById('plateCountBadge');
-const matchStatsBadge = document.getElementById('matchStatsBadge');
 const btnRecognize = document.getElementById('btnRecognize');
 const btnRecognizeText = document.getElementById('btnRecognizeText');
-const btnSamplePlates = document.getElementById('btnSamplePlates');
-const btnClearPlates = document.getElementById('btnClearPlates');
 
 const cameraSelect = document.getElementById('cameraSelect');
 const videoElement = document.getElementById('videoElement');
 const staticImageElement = document.getElementById('staticImageElement');
 const overlayCanvas = document.getElementById('overlayCanvas');
+const viewportContainer = document.getElementById('viewportContainer');
+const zoomBadge = document.getElementById('zoomBadge');
+const zoomBadgeText = document.getElementById('zoomBadgeText');
 const idleOverlay = document.getElementById('idleOverlay');
 const btnIdleStart = document.getElementById('btnIdleStart');
 const btnIdleSample = document.getElementById('btnIdleSample');
@@ -35,11 +35,26 @@ const rightPanel = document.querySelector('.right-panel');
 // State
 let targetPlates = new Set();
 const engine = new LprEngine({ base: (import.meta.env.BASE_URL ?? '/') + 'lpr/' });
+let activeVideoTrack = null;
+let zoomCapabilities = null;
+let currentZoom = 1.0;
+let pinchStartDistance = 0;
+let pinchStartZoom = 1.0;
+let zoomBadgeTimeout = null;
+
 if (typeof window !== 'undefined') {
   window.__lprEngine = engine;
   window.__fitFrameToMax1080 = fitFrameToMax1080;
   window.__matchPlate = matchPlate;
   window.__getTargetPlates = () => targetPlates;
+  window.__getZoomCapabilities = () => zoomCapabilities;
+  window.__getCurrentZoom = () => currentZoom;
+  window.__applyCameraZoom = (z) => applyCameraZoom(z);
+  window.__showZoomBadge = (z) => showZoomBadge(z);
+  window.__setMockZoom = (track, caps) => {
+    activeVideoTrack = track;
+    zoomCapabilities = caps;
+  };
 }
 let isStreaming = false;
 let mediaStream = null;
@@ -179,6 +194,60 @@ async function setupCameraDevices() {
 }
 
 /**
+ * Applies native camera zoom using MediaStreamTrack applyConstraints.
+ */
+async function applyCameraZoom(zoomLevel) {
+  if (!activeVideoTrack || !zoomCapabilities) return;
+  const min = zoomCapabilities.min ?? 1.0;
+  const max = zoomCapabilities.max ?? 1.0;
+  const step = zoomCapabilities.step ?? 0.1;
+
+  const clamped = Math.max(min, Math.min(max, zoomLevel));
+  const rounded = Math.round(clamped / step) * step;
+
+  currentZoom = rounded;
+
+  try {
+    await activeVideoTrack.applyConstraints({
+      advanced: [{ zoom: rounded }]
+    });
+  } catch (err) {
+    console.warn('Native camera zoom error:', err);
+  }
+
+  showZoomBadge(rounded);
+}
+
+function showZoomBadge(val) {
+  if (!zoomBadge || !zoomBadgeText) return;
+  zoomBadgeText.textContent = `${Number(val).toFixed(1)}×`;
+  zoomBadge.style.display = 'flex';
+  zoomBadge.style.opacity = '1';
+
+  if (zoomBadgeTimeout) {
+    clearTimeout(zoomBadgeTimeout);
+  }
+  zoomBadgeTimeout = setTimeout(() => {
+    zoomBadge.style.opacity = '0';
+    setTimeout(() => {
+      if (zoomBadge.style.opacity === '0') {
+        zoomBadge.style.display = 'none';
+      }
+    }, 250);
+  }, 1200);
+}
+
+function hideZoomBadge() {
+  if (zoomBadgeTimeout) {
+    clearTimeout(zoomBadgeTimeout);
+    zoomBadgeTimeout = null;
+  }
+  if (zoomBadge) {
+    zoomBadge.style.display = 'none';
+  }
+}
+
+/**
  * Starts camera streaming with forward-facing preference.
  */
 async function startCamera() {
@@ -202,10 +271,32 @@ async function startCamera() {
       videoConstraints.facingMode = { ideal: 'environment' };
     }
 
-    mediaStream = await navigator.mediaDevices.getUserMedia({
-      video: videoConstraints,
-      audio: false
-    });
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { ...videoConstraints, zoom: true },
+        audio: false
+      });
+    } catch (e) {
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: videoConstraints,
+        audio: false
+      });
+    }
+
+    // Inspect native camera hardware zoom capabilities
+    activeVideoTrack = mediaStream.getVideoTracks()[0] || null;
+    if (activeVideoTrack && typeof activeVideoTrack.getCapabilities === 'function') {
+      const caps = activeVideoTrack.getCapabilities();
+      if (caps && 'zoom' in caps) {
+        zoomCapabilities = caps.zoom;
+        const settings = activeVideoTrack.getSettings ? activeVideoTrack.getSettings() : {};
+        currentZoom = settings.zoom || zoomCapabilities.min || 1.0;
+      } else {
+        zoomCapabilities = null;
+      }
+    } else {
+      zoomCapabilities = null;
+    }
 
     videoElement.srcObject = mediaStream;
     staticImageElement.style.display = 'none';
@@ -256,6 +347,11 @@ function stopCamera() {
   }
   isStreaming = false;
   isProcessingFrame = false;
+
+  activeVideoTrack = null;
+  zoomCapabilities = null;
+  currentZoom = 1.0;
+  hideZoomBadge();
 
   if (mediaStream) {
     mediaStream.getTracks().forEach((track) => track.stop());
@@ -347,9 +443,6 @@ async function processCurrentFrame() {
 function clearOverlay() {
   const ctx = overlayCanvas.getContext('2d');
   ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-  if (matchStatsBadge) {
-    matchStatsBadge.textContent = '0 matches in view';
-  }
 }
 
 /**
@@ -493,10 +586,6 @@ function renderBoundingBoxes(detections, fitted, source) {
     ctx.fillText(symbol, iconX, iconY);
 
     ctx.restore();
-  }
-
-  if (matchStatsBadge) {
-    matchStatsBadge.textContent = `${matchedCountInFrame} ${matchedCountInFrame === 1 ? 'match' : 'matches'} in view`;
   }
 }
 
@@ -654,21 +743,49 @@ const SAMPLE_TARGET_PLATES = [
   'SND33T'
 ].join('\n');
 
-btnSamplePlates.addEventListener('click', () => {
-  platesTextarea.value = SAMPLE_TARGET_PLATES;
-  updateTargetPlates();
-  if (activeMode !== 'idle') {
-    processCurrentFrame();
+// Native camera pinch-to-zoom touch handlers on mobile
+viewportContainer.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2 && activeMode === 'camera' && zoomCapabilities) {
+    e.preventDefault();
+    const t1 = e.touches[0];
+    const t2 = e.touches[1];
+    pinchStartDistance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    pinchStartZoom = currentZoom;
+  }
+}, { passive: false });
+
+viewportContainer.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 2 && activeMode === 'camera' && zoomCapabilities && pinchStartDistance > 0) {
+    e.preventDefault();
+    const t1 = e.touches[0];
+    const t2 = e.touches[1];
+    const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    if (pinchStartDistance > 5) {
+      const scale = currentDist / pinchStartDistance;
+      const targetZoom = pinchStartZoom * scale;
+      applyCameraZoom(targetZoom);
+    }
+  }
+}, { passive: false });
+
+viewportContainer.addEventListener('touchend', (e) => {
+  if (e.touches.length < 2) {
+    pinchStartDistance = 0;
   }
 });
 
-btnClearPlates.addEventListener('click', () => {
-  platesTextarea.value = '';
-  updateTargetPlates();
-  if (activeMode !== 'idle') {
-    processCurrentFrame();
-  }
+viewportContainer.addEventListener('touchcancel', () => {
+  pinchStartDistance = 0;
 });
+
+// Also support trackpad pinch gesture on desktop/laptop
+viewportContainer.addEventListener('wheel', (e) => {
+  if (e.ctrlKey && activeMode === 'camera' && zoomCapabilities) {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.05 : 0.95;
+    applyCameraZoom(currentZoom * factor);
+  }
+}, { passive: false });
 
 sampleSelect.addEventListener('change', () => {
   const url = sampleSelect.value;
