@@ -513,17 +513,19 @@ function renderBoundingBoxes(detections, fitted, source) {
   const scaleX = renderW / fitted.width;
   const scaleY = renderH / fitted.height;
 
-  let matchedCountInFrame = 0;
+  // Sort detections: reds (non-matches) first, greens (matches) last,
+  // so that any overlapping green will overlay a red
+  const sortedDetections = detections
+    .map((det) => {
+      const rawText = det.text || '';
+      const matchRes = matchPlate(rawText, targetPlates);
+      return { det, rawText, matchRes };
+    })
+    .sort((a, b) => (a.matchRes.isMatch ? 1 : 0) - (b.matchRes.isMatch ? 1 : 0));
 
-  for (const det of detections) {
-    const rawText = det.text || '';
-    const matchRes = matchPlate(rawText, targetPlates);
+  for (const { det, rawText, matchRes } of sortedDetections) {
     const isMatch = matchRes.isMatch;
     const displayPlate = rawText || matchRes.matchedPlate || 'PLATE';
-
-    if (isMatch) {
-      matchedCountInFrame++;
-    }
 
     // Map quad coordinates to overlay space
     const quad = det.quad.map(([qx, qy]) => [
