@@ -33,7 +33,7 @@ const audioChimeToggle = document.getElementById('audioChimeToggle');
 
 // State
 let targetPlates = new Set();
-const engine = new LprEngine({ base: '/lpr/' });
+const engine = new LprEngine({ base: (import.meta.env.BASE_URL ?? '/') + 'lpr/' });
 if (typeof window !== 'undefined') {
   window.__lprEngine = engine;
   window.__fitFrameToMax1080 = fitFrameToMax1080;
@@ -689,7 +689,7 @@ async function loadStaticImage(url) {
     };
     staticImageElement.src = fitted.canvas.toDataURL('image/jpeg', 0.95);
   };
-  tempImg.src = url;
+  tempImg.src = import.meta.env.BASE_URL.replace(/\/$/, '') + url;
 }
 
 // Event Listeners

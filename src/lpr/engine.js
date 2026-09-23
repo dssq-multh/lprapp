@@ -162,7 +162,7 @@ export class LprEngine {
     if (this.isReady) return;
 
     if (onStatus) onStatus('Configuring WebAssembly runtime...');
-    ort.env.wasm.wasmPaths = '/ort-wasm/';
+    ort.env.wasm.wasmPaths = (import.meta.env.BASE_URL ?? '/') + 'ort-wasm/';
     if (typeof window !== 'undefined' && !window.crossOriginIsolated) {
       ort.env.wasm.numThreads = 1;
     }
@@ -191,7 +191,7 @@ export class LprEngine {
         textRecognitionModelAsset: { url: '/models/PP-OCRv6_tiny_rec_onnx_infer.tar' },
         ortOptions: {
           backend: 'wasm',
-          wasmPaths: '/ort-wasm/'
+          wasmPaths: (import.meta.env.BASE_URL ?? '/') + 'ort-wasm/'
         }
       });
       console.log('PaddleOCR Wasm engine ready!');
