@@ -165,6 +165,46 @@ export class LprEngine {
     this.paddleOcr = null;
     this.isReady = false;
     this.scoreThreshold = opts.scoreThreshold || DEFAULT_DET_THRESH;
+    this.enableGpu = opts.enableGpu || false;
+  }
+
+  async setEnableGpu(enabled, onStatus) {
+    const nextGpu = Boolean(enabled);
+    if (this.enableGpu === nextGpu && this.spotter) {
+      return { success: true, enabled: this.enableGpu };
+    }
+    this.enableGpu = nextGpu;
+    if (!this.spotter) return { success: true, enabled: this.enableGpu };
+
+    const providerName = this.enableGpu ? 'WebGPU' : 'WASM';
+    if (onStatus) onStatus(`Switching YOLO detector to ${providerName}...`);
+
+    const spotterUrl = `${this.base}models/spotter_b_v12_yuv_pm.onnx`;
+    const eps = this.enableGpu ? ['webgpu', 'wasm'] : ['wasm'];
+    const optLevel = this.enableGpu ? 'all' : 'disabled';
+    const oldSpotter = this.spotter;
+
+    try {
+      this.spotter = await ort.InferenceSession.create(spotterUrl, {
+        executionProviders: eps,
+        graphOptimizationLevel: optLevel,
+      });
+      console.log(`YOLOv5n-OBB switched to providers: [${eps.join(', ')}]`);
+      if (oldSpotter && typeof oldSpotter.release === 'function') {
+        try { await oldSpotter.release(); } catch (_) {}
+      }
+      if (onStatus) onStatus(`YOLO running on ${providerName}`);
+      return { success: true, enabled: this.enableGpu };
+    } catch (err) {
+      console.warn(`Failed to set YOLO execution providers to [${eps.join(', ')}]:`, err);
+      this.spotter = oldSpotter;
+      if (this.enableGpu) {
+        this.enableGpu = false;
+        if (onStatus) onStatus('WebGPU failed, remained on WASM');
+        return { success: false, error: err, reverted: true };
+      }
+      throw err;
+    }
   }
 
   async init(onStatus) {
@@ -176,20 +216,28 @@ export class LprEngine {
       ort.env.wasm.numThreads = 1;
     }
 
-    if (onStatus) onStatus('Loading license plate detector (YOLOv5n-OBB)...');
+    const providerName = this.enableGpu ? 'WebGPU' : 'WASM';
+    if (onStatus) onStatus(`Loading license plate detector (YOLOv5n-OBB on ${providerName})...`);
     const spotterUrl = `${this.base}models/spotter_b_v12_yuv_pm.onnx`;
+    const eps = this.enableGpu ? ['webgpu', 'wasm'] : ['wasm'];
+    const optLevel = this.enableGpu ? 'all' : 'disabled';
     try {
       this.spotter = await ort.InferenceSession.create(spotterUrl, {
-        executionProviders: ['wasm'],
-        graphOptimizationLevel: 'disabled',
+        executionProviders: eps,
+        graphOptimizationLevel: optLevel,
       });
+      console.log(`YOLOv5n-OBB initialized with providers: [${eps.join(', ')}]`);
     } catch (e1) {
-      throw e1
-      // console.warn('Spotter webgpu unavailable, falling back to local wasm:', e1);
-      // this.spotter = await ort.InferenceSession.create(spotterUrl, {
-      //   executionProviders: ['wasm'],
-      //   graphOptimizationLevel: 'all'
-      // });
+      if (this.enableGpu) {
+        console.warn('YOLO WebGPU initialization failed, falling back to WASM:', e1);
+        this.enableGpu = false;
+        this.spotter = await ort.InferenceSession.create(spotterUrl, {
+          executionProviders: ['wasm'],
+          graphOptimizationLevel: 'disabled',
+        });
+      } else {
+        throw e1;
+      }
     }
 
     if (onStatus) onStatus('Initializing PaddleOCR Wasm engine...');

@@ -102,6 +102,45 @@ body {
   gap: 0.75rem;
 }
 
+.gpu-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.3rem 0.65rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.gpu-checkbox-label:hover {
+  color: #fff;
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.gpu-checkbox-label input[type="checkbox"] {
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+}
+
+.gpu-checkbox-label.is-active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+}
+
+.gpu-checkbox-label.toolbar-gpu {
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;

@@ -30,6 +30,10 @@
         </div>
 
         <div class="header-status">
+          <label class="gpu-checkbox-label" title="Enable WebGPU provider for YOLO detector (off by default)">
+            <input type="checkbox" id="gpuToggle" />
+            <span class="gpu-label-text">Enable GPU</span>
+          </label>
           <div id="engineStatusBadge" class="status-badge loading">
             <span class="status-dot"></span>
             <span id="engineStatusText">Initializing Wasm engine...</span>
@@ -149,6 +153,10 @@
             </div>
 
             <div class="toolbar-right">
+              <label class="gpu-checkbox-label toolbar-gpu" title="Enable WebGPU provider for YOLO detector (off by default)">
+                <input type="checkbox" id="gpuToggleToolbar" />
+                <span class="gpu-label-text">GPU</span>
+              </label>
               <div class="perf-stats">
                 <span id="scanFpsText">-- FPS</span>
                 <span class="perf-divider">•</span>

@@ -31,10 +31,19 @@ const btnCloseOverlay = document.getElementById('btnCloseOverlay');
 const btnMobileSampleCar = document.getElementById('btnMobileSampleCar');
 const mobileFileInput = document.getElementById('mobileFileInput');
 const rightPanel = document.querySelector('.right-panel');
+const gpuToggle = document.getElementById('gpuToggle');
+const gpuToggleToolbar = document.getElementById('gpuToggleToolbar');
 
 // State
+const STORAGE_KEY_GPU = 'alpr_enable_gpu';
+// Off by default unless explicitly saved as 'true' in localStorage
+let isGpuEnabled = typeof localStorage !== 'undefined' && localStorage.getItem(STORAGE_KEY_GPU) === 'true';
+
 let targetPlates = new Set();
-const engine = new LprEngine({ base: (import.meta.env.BASE_URL ?? '/') + 'lpr/' });
+const engine = new LprEngine({
+  base: (import.meta.env.BASE_URL ?? '/') + 'lpr/',
+  enableGpu: isGpuEnabled
+});
 let activeVideoTrack = null;
 let zoomCapabilities = null;
 let currentZoom = 1.0;
@@ -55,6 +64,8 @@ if (typeof window !== 'undefined') {
     activeVideoTrack = track;
     zoomCapabilities = caps;
   };
+  window.__getGpuEnabled = () => isGpuEnabled;
+  window.__setGpuEnabled = (v) => onGpuToggleChange(v);
 }
 let isStreaming = false;
 let mediaStream = null;
@@ -856,6 +867,58 @@ window.addEventListener('resize', () => {
   }
 });
 
+function updateGpuUi(enabled) {
+  if (gpuToggle) {
+    gpuToggle.checked = enabled;
+    gpuToggle.closest('.gpu-checkbox-label')?.classList.toggle('is-active', enabled);
+  }
+  if (gpuToggleToolbar) {
+    gpuToggleToolbar.checked = enabled;
+    gpuToggleToolbar.closest('.gpu-checkbox-label')?.classList.toggle('is-active', enabled);
+  }
+}
+
+async function onGpuToggleChange(enabled) {
+  isGpuEnabled = Boolean(enabled);
+  try {
+    localStorage.setItem(STORAGE_KEY_GPU, String(isGpuEnabled));
+  } catch (_) {}
+  updateGpuUi(isGpuEnabled);
+
+  engineStatusBadge.className = 'status-badge loading';
+  engineStatusText.textContent = isGpuEnabled ? 'Switching YOLO to WebGPU...' : 'Switching YOLO to WASM...';
+
+  try {
+    const res = await engine.setEnableGpu(isGpuEnabled, (msg) => {
+      engineStatusText.textContent = msg;
+    });
+
+    if (res && res.reverted) {
+      isGpuEnabled = false;
+      try { localStorage.setItem(STORAGE_KEY_GPU, 'false'); } catch (_) {}
+      updateGpuUi(false);
+      engineStatusBadge.className = 'status-badge ready';
+      engineStatusText.textContent = 'WebGPU unavailable; on WASM';
+      alert('WebGPU is not supported or encountered an initialization error on this browser/GPU. Reverted to WASM.');
+    } else {
+      engineStatusBadge.className = 'status-badge ready';
+      engineStatusText.textContent = `YOLO ready on ${isGpuEnabled ? 'WebGPU' : 'WASM'}`;
+    }
+  } catch (err) {
+    console.error('Failed to change GPU provider:', err);
+    isGpuEnabled = false;
+    try { localStorage.setItem(STORAGE_KEY_GPU, 'false'); } catch (_) {}
+    updateGpuUi(false);
+    engineStatusBadge.className = 'status-badge ready';
+    engineStatusText.textContent = 'Ready (WASM)';
+  }
+}
+
+// Sync initial GPU toggle state and listen for changes
+updateGpuUi(isGpuEnabled);
+gpuToggle?.addEventListener('change', (e) => onGpuToggleChange(e.target.checked));
+gpuToggleToolbar?.addEventListener('change', (e) => onGpuToggleChange(e.target.checked));
+
 // Initialization
 async function initApp() {
   // Prepopulate sample plates so user gets immediate visual feedback
@@ -869,7 +932,7 @@ async function initApp() {
       engineStatusText.textContent = status;
     });
     engineStatusBadge.className = 'status-badge ready';
-    engineStatusText.textContent = 'Wasm Models Ready';
+    engineStatusText.textContent = `Models Ready (${isGpuEnabled ? 'WebGPU' : 'WASM'})`;
   } catch (err) {
     console.error('Failed to initialize engine:', err);
     engineStatusBadge.className = 'status-badge ready';
