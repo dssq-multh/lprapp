@@ -216,6 +216,32 @@ body {
   margin-top: 0.25rem;
 }
 
+.plate-secondary-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.plate-secondary-bar .btn {
+  flex: 1;
+}
+
+.btn-close-overlay {
+  display: none; /* Hidden on desktop; displayed when overlaying on mobile */
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.5);
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+}
+
+.btn-close-overlay:hover {
+  background: rgba(239, 68, 68, 0.4);
+  color: #fff;
+  border-color: rgba(239, 68, 68, 0.7);
+}
+
 /* The High-Impact "Recognize!" Button */
 .btn-recognize {
   flex: 1;
@@ -411,6 +437,14 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+body.camera-active-mode .sample-actions {
+  display: none;
+}
+
+body.static-active-mode .camera-select-wrap {
+  display: none;
 }
 
 .camera-select-wrap {
@@ -614,141 +648,6 @@ body {
   color: #38bdf8;
 }
 
-/* Bottom Detections Feed */
-.detections-feed-container {
-  height: 180px;
-  min-height: 140px;
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  z-index: 15;
-}
-
-.feed-header {
-  height: 38px;
-  padding: 0 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border-color);
-  background: rgba(17, 23, 38, 0.6);
-}
-
-.feed-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #fff;
-}
-
-.feed-controls {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.toggle-label {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.toggle-label input {
-  cursor: pointer;
-}
-
-.detections-list {
-  flex: 1;
-  display: flex;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-  align-items: center;
-}
-
-.empty-feed-text {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  font-style: italic;
-  margin: auto;
-}
-
-/* Feed Item Card */
-.feed-item {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  animation: slideIn 0.25s ease-out;
-}
-
-.feed-item.match {
-  border-color: rgba(16, 185, 129, 0.4);
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(17, 24, 39, 0.95));
-}
-
-.feed-item.unlisted {
-  border-color: rgba(239, 68, 68, 0.4);
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(17, 24, 39, 0.95));
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(15px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.feed-item-badge {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  font-weight: 800;
-}
-
-.feed-item.match .feed-item-badge {
-  background: var(--color-green);
-  color: #fff;
-  box-shadow: 0 0 10px var(--color-green-glow);
-}
-
-.feed-item.unlisted .feed-item-badge {
-  background: var(--color-red);
-  color: #fff;
-  box-shadow: 0 0 10px var(--color-red-glow);
-}
-
-.feed-item-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.feed-item-plate {
-  font-family: var(--font-mono);
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: #fff;
-}
-
-.feed-item-meta {
-  font-size: 0.68rem;
-  color: var(--text-muted);
-}
-
 /* Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
@@ -765,23 +664,81 @@ body {
   background: rgba(255, 255, 255, 0.25);
 }
 
-/* Responsive adjustments */
+/* Responsive / Mobile Layout */
 @media (max-width: 900px) {
   .left-panel {
-    width: 280px;
-    min-width: 250px;
-    padding: 0.75rem 0.85rem;
+    width: 320px;
+    min-width: 280px;
   }
 }
-@media (max-width: 650px) {
+
+@media (max-width: 768px) {
+  body {
+    overflow: hidden;
+  }
+
   .main-container {
     flex-direction: column;
+    height: calc(100vh - var(--header-height));
+    height: calc(100dvh - var(--header-height));
   }
+
   .left-panel {
     width: 100%;
-    height: 35vh;
+    max-width: 100%;
+    min-width: 0;
+    flex: 1;
+    height: 100%;
+    border-right: none;
+    padding: 0.85rem 1rem;
   }
+
+  /* Inactive camera pane is completely hidden on mobile */
   .right-panel {
-    height: 65vh;
+    display: none;
+  }
+
+  /* When camera or preview is active on mobile, it overlays the whole screen */
+  .right-panel.mobile-active {
+    display: flex !important;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    z-index: 1000 !important;
+    background: #000 !important;
+    flex-direction: column !important;
+  }
+
+  /* Mobile overlay close button */
+  .btn-close-overlay {
+    display: inline-flex !important;
+  }
+
+  .viewport-toolbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    background: rgba(10, 13, 20, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 0.4rem 0.65rem;
+    height: auto;
+    min-height: 48px;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .stream-active-badge {
+    top: 54px;
+    left: 0.75rem;
+  }
+
+  .idle-overlay {
+    display: none !important;
   }
 }

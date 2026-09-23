@@ -27,9 +27,10 @@ const sampleSelect = document.getElementById('sampleSelect');
 const btnPrevSample = document.getElementById('btnPrevSample');
 const btnNextSample = document.getElementById('btnNextSample');
 const fileInput = document.getElementById('fileInput');
-const detectionsList = document.getElementById('detectionsList');
-const btnClearFeed = document.getElementById('btnClearFeed');
-const audioChimeToggle = document.getElementById('audioChimeToggle');
+const btnCloseOverlay = document.getElementById('btnCloseOverlay');
+const btnMobileSampleCar = document.getElementById('btnMobileSampleCar');
+const mobileFileInput = document.getElementById('mobileFileInput');
+const rightPanel = document.querySelector('.right-panel');
 
 // State
 let targetPlates = new Set();
@@ -44,40 +45,10 @@ let isStreaming = false;
 let mediaStream = null;
 let isProcessingFrame = false;
 let animationFrameId = null;
-let lastSpottedPlates = new Map(); // Plate -> { timestamp, match, count }
 let lastProcessedTime = 0;
 let frameCount = 0;
 let fpsLastTime = performance.now();
 let activeMode = 'idle'; // 'camera', 'static', 'idle'
-
-// Web Audio API context for chime
-let audioCtx = null;
-function playMatchChime() {
-  // Audio chime gets annoying in video
-  return;
-  try {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    // Arpeggio chime: 587Hz (D5) -> 880Hz (A5)
-    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(880.00, audioCtx.currentTime + 0.12);
-    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.36);
-  } catch (e) {
-    console.warn('Audio chime error:', e);
-  }
-}
 
 /**
  * Normalizes a plate string for reliable matching:
@@ -249,8 +220,11 @@ async function startCamera() {
 
     isStreaming = true;
     activeMode = 'camera';
+    document.body.classList.add('camera-active-mode');
+    document.body.classList.remove('static-active-mode');
     idleOverlay.style.display = 'none';
     streamBadge.style.display = 'flex';
+    if (rightPanel) rightPanel.classList.add('mobile-active');
 
     btnRecognize.classList.add('is-recognizing');
     btnRecognizeText.textContent = 'Stop Streaming';
@@ -292,8 +266,11 @@ function stopCamera() {
   btnRecognize.classList.remove('is-recognizing');
   btnRecognizeText.textContent = 'Recognize!';
   streamBadge.style.display = 'none';
+  if (rightPanel) rightPanel.classList.remove('mobile-active');
+  document.body.classList.remove('camera-active-mode', 'static-active-mode');
 
   if (activeMode === 'camera') {
+    activeMode = 'idle';
     idleOverlay.style.display = 'flex';
     clearOverlay();
   }
@@ -357,7 +334,6 @@ async function processCurrentFrame() {
 
     // Render bounding boxes with Green Tick or Red Cross
     renderBoundingBoxes(detections, fitted, source);
-    updateDetectionsFeed(detections);
   } catch (err) {
     console.error('Frame processing error:', err);
   } finally {
@@ -371,6 +347,9 @@ async function processCurrentFrame() {
 function clearOverlay() {
   const ctx = overlayCanvas.getContext('2d');
   ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  if (matchStatsBadge) {
+    matchStatsBadge.textContent = '0 matches in view';
+  }
 }
 
 /**
@@ -516,9 +495,8 @@ function renderBoundingBoxes(detections, fitted, source) {
     ctx.restore();
   }
 
-  // Play chime once if a new match was discovered
-  if (matchedCountInFrame > 0) {
-    playMatchChime();
+  if (matchStatsBadge) {
+    matchStatsBadge.textContent = `${matchedCountInFrame} ${matchedCountInFrame === 1 ? 'match' : 'matches'} in view`;
   }
 }
 
@@ -587,77 +565,6 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 /**
- * Updates the Detections Feed at the bottom of the viewport.
- */
-function updateDetectionsFeed(detections) {
-  if (!detections || detections.length === 0) return;
-
-  const now = Date.now();
-  let updated = false;
-
-  for (const det of detections) {
-    const raw = det.text.trim();
-    const matchRes = matchPlate(raw, targetPlates);
-    const isMatch = matchRes.isMatch;
-    const norm = isMatch ? matchRes.matchedPlate : normalizePlate(raw);
-
-    const prev = lastSpottedPlates.get(norm);
-    // Rate limit feed cards to once per 2.5 seconds per unique plate
-    if (!prev || (now - prev.timestamp) > 2500) {
-      lastSpottedPlates.set(norm, {
-        raw,
-        norm,
-        isMatch,
-        conf: det.minConf,
-        timestamp: now,
-        count: (prev ? prev.count : 0) + 1
-      });
-      updated = true;
-    }
-  }
-
-  if (updated) {
-    renderFeedList();
-  }
-}
-
-/**
- * Renders the feed item cards.
- */
-function renderFeedList() {
-  const sorted = Array.from(lastSpottedPlates.values())
-    .sort((a, b) => b.timestamp - a.timestamp)
-    .slice(0, 15);
-
-  if (sorted.length === 0) {
-    detectionsList.innerHTML = '<div class="empty-feed-text">No plates spotted yet. Start streaming or try a sample image!</div>';
-    matchStatsBadge.textContent = '0 matches found';
-    return;
-  }
-
-  const matchTotal = sorted.filter((s) => s.isMatch).length;
-  matchStatsBadge.textContent = `${matchTotal} ${matchTotal === 1 ? 'match' : 'matches'} found`;
-
-  detectionsList.innerHTML = sorted.map((item) => {
-    const symbol = item.isMatch ? '✓' : '✗';
-    const tagClass = item.isMatch ? 'match' : 'unlisted';
-    const tagText = item.isMatch ? 'Target Matched' : 'Not In List';
-    const timeStr = new Date(item.timestamp).toLocaleTimeString();
-    const confStr = `${Math.round(item.conf * 100)}% conf`;
-
-    return `
-      <div class="feed-item ${tagClass}">
-        <div class="feed-item-badge">${symbol}</div>
-        <div class="feed-item-info">
-          <span class="feed-item-plate">${item.raw}</span>
-          <span class="feed-item-meta">${tagText} • ${confStr} • ${timeStr}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-/**
  * Loads a static test image (e.g. Car 1, Car 2, or uploaded photo)
  * and renders the downscaled 1080px content so visual display matches what AI sees.
  */
@@ -667,6 +574,9 @@ async function loadStaticImage(url) {
   }
 
   activeMode = 'static';
+  document.body.classList.add('static-active-mode');
+  document.body.classList.remove('camera-active-mode');
+  if (rightPanel) rightPanel.classList.add('mobile-active');
   idleOverlay.style.display = 'none';
   videoElement.style.display = 'none';
   staticImageElement.style.display = 'block';
@@ -793,9 +703,34 @@ fileInput.addEventListener('change', (e) => {
   }
 });
 
-btnClearFeed.addEventListener('click', () => {
-  lastSpottedPlates.clear();
-  renderFeedList();
+btnCloseOverlay?.addEventListener('click', () => {
+  if (isStreaming) {
+    stopCamera();
+  } else {
+    activeMode = 'idle';
+    document.body.classList.remove('camera-active-mode', 'static-active-mode');
+    if (rightPanel) rightPanel.classList.remove('mobile-active');
+    staticImageElement.style.display = 'none';
+    idleOverlay.style.display = 'flex';
+    clearOverlay();
+    engineStatusBadge.className = 'status-badge ready';
+    engineStatusText.textContent = 'Ready';
+  }
+});
+
+btnMobileSampleCar?.addEventListener('click', () => {
+  loadStaticImage('/samples/car_cal8942.jpg');
+});
+
+mobileFileInput?.addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      loadStaticImage(event.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
 });
 
 window.addEventListener('resize', () => {

@@ -72,6 +72,16 @@
                 </button>
               </div>
             </div>
+
+            <div class="plate-secondary-bar">
+              <button id="btnMobileSampleCar" class="btn btn-secondary btn-sm" title="Test with sample car photos">
+                🚗 Try Sample Car
+              </button>
+              <label class="btn btn-secondary btn-sm upload-btn" title="Upload a vehicle picture">
+                <input type="file" id="mobileFileInput" accept="image/*" style="display:none;" />
+                📸 Upload Photo
+              </label>
+            </div>
           </div>
 
           <!-- The Textarea scaled to fit the page height -->
@@ -96,6 +106,14 @@
           <!-- Control Bar for Viewport -->
           <div class="viewport-toolbar">
             <div class="toolbar-left">
+              <!-- Close / Back Button (visible when camera or test view overlays screen) -->
+              <button id="btnCloseOverlay" class="btn btn-ghost btn-close-overlay" title="Close Camera / Return to Target Plates">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+                <span class="btn-close-text">Close</span>
+              </button>
+
               <!-- Camera Selector -->
               <div class="camera-select-wrap">
                 <label for="cameraSelect" class="sr-only">Camera</label>
@@ -184,29 +202,6 @@
             <div id="streamBadge" class="stream-active-badge" style="display:none;">
               <span class="pulsing-record-dot"></span>
               <span id="streamBadgeText">LIVE RECOGNIZING</span>
-            </div>
-          </div>
-
-          <!-- Detections History & Match Feed -->
-          <div class="detections-feed-container">
-            <div class="feed-header">
-              <div class="feed-title">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                </svg>
-                <span>Live Detections Feed</span>
-              </div>
-              <div class="feed-controls">
-                <label class="toggle-label" title="Play audio chime when a listed plate is spotted">
-                  <input type="checkbox" id="audioChimeToggle" checked />
-                  <span>Audio Alert</span>
-                </label>
-                <button id="btnClearFeed" class="btn btn-ghost btn-xs text-muted">Clear Feed</button>
-              </div>
-            </div>
-
-            <div id="detectionsList" class="detections-list">
-              <div class="empty-feed-text">No plates spotted yet. Start streaming or try a sample image!</div>
             </div>
           </div>
         </section>
