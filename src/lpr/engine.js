@@ -341,14 +341,35 @@ export class LprEngine {
         const avgScore = res.items.reduce((s, it) => s + (it.score || 0.8), 0) / res.items.length;
         ocrConf = avgScore;
 
-        // If PaddleOCR detected a valid 4-point text polygon, map it back to image space
-        // so the bounding quadrilateral precisely aligns with the perspective slant and orientation of the text
-        const firstItem = res.items[0];
-        if (firstItem && firstItem.poly && firstItem.poly.length === 4) {
+        // If PaddleOCR detected valid 4-point text polygon(s), map them back to image space
+        // so the bounding quadrilateral precisely aligns with the perspective slant and orientation of all text lines
+        const validPolys = res.items.map((it) => it.poly).filter((p) => p && p.length === 4);
+        if (validPolys.length > 0) {
+          const firstPoly = validPolys[0];
+          const lastPoly = validPolys[validPolys.length - 1];
+
+          // Top edge from first line, bottom edge from last line
+          const rawQuad = [
+            [firstPoly[0][0], firstPoly[0][1]], // Top-Left
+            [firstPoly[1][0], firstPoly[1][1]], // Top-Right
+            [lastPoly[2][0], lastPoly[2][1]],   // Bottom-Right
+            [lastPoly[3][0], lastPoly[3][1]]    // Bottom-Left
+          ];
+
+          if (validPolys.length > 1) {
+            // Expand horizontal bounds to encompass all lines
+            const minX = Math.min(...validPolys.flatMap((p) => [p[0][0], p[3][0]]));
+            const maxX = Math.max(...validPolys.flatMap((p) => [p[1][0], p[2][0]]));
+            rawQuad[0][0] = Math.min(rawQuad[0][0], minX);
+            rawQuad[3][0] = Math.min(rawQuad[3][0], minX);
+            rawQuad[1][0] = Math.max(rawQuad[1][0], maxX);
+            rawQuad[2][0] = Math.max(rawQuad[2][0], maxX);
+          }
+
           const scaleCrop = crop.sw / crop.targetW;
-          const cx = (firstItem.poly[0][0] + firstItem.poly[1][0] + firstItem.poly[2][0] + firstItem.poly[3][0]) / 4;
-          const cy = (firstItem.poly[0][1] + firstItem.poly[1][1] + firstItem.poly[2][1] + firstItem.poly[3][1]) / 4;
-          const expanded = firstItem.poly.map(([px, py]) => [
+          const cx = (rawQuad[0][0] + rawQuad[1][0] + rawQuad[2][0] + rawQuad[3][0]) / 4;
+          const cy = (rawQuad[0][1] + rawQuad[1][1] + rawQuad[2][1] + rawQuad[3][1]) / 4;
+          const expanded = rawQuad.map(([px, py]) => [
             cx + (px - cx) * 1.18,
             cy + (py - cy) * 1.25
           ]);
