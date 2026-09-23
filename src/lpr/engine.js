@@ -126,8 +126,15 @@ function refinePlateBox(sourceCanvas, rawBox) {
 /**
  * Prepares the plate crop for PaddleOCR reading.
  */
-function preprocessPlateCrop(sourceCanvas, box) {
-  const aspect = box.width / Math.max(1, box.height);
+function preprocessPlateCrop(sourceCanvas, box, quad) {
+  let aspect = box.width / Math.max(1, box.height);
+  if (quad && quad.length === 4) {
+    const edgeTop = Math.hypot(quad[1][0] - quad[0][0], quad[1][1] - quad[0][1]);
+    const edgeSide = Math.hypot(quad[2][0] - quad[1][0], quad[2][1] - quad[1][1]);
+    if (edgeSide > 0) {
+      aspect = edgeTop / edgeSide;
+    }
+  }
   const isSquare = aspect < 2.0;
   const padX = isSquare ? 4 : Math.max(12, Math.round(box.width * 0.22));
   const padY = 4;
@@ -137,7 +144,9 @@ function preprocessPlateCrop(sourceCanvas, box) {
   const sh = Math.min(sourceCanvas.height - sy, box.height + padY * 2);
 
   const targetH = 48;
-  const targetW = Math.max(64, Math.round((sw * targetH) / sh));
+  const targetW = isSquare
+    ? Math.max(64, Math.round(targetH * aspect))
+    : Math.max(180, Math.round(targetH * aspect * (sw / Math.max(1, box.width))));
 
   const c = document.createElement('canvas');
   c.width = targetW;
@@ -171,15 +180,16 @@ export class LprEngine {
     const spotterUrl = `${this.base}models/spotter_b_v12_yuv_pm.onnx`;
     try {
       this.spotter = await ort.InferenceSession.create(spotterUrl, {
-        executionProviders: ['webgpu', 'wasm'],
-        graphOptimizationLevel: 'all'
+        executionProviders: ['wasm'],
+        graphOptimizationLevel: 'disabled',
       });
     } catch (e1) {
-      console.warn('Spotter webgpu unavailable, falling back to local wasm:', e1);
-      this.spotter = await ort.InferenceSession.create(spotterUrl, {
-        executionProviders: ['wasm'],
-        graphOptimizationLevel: 'all'
-      });
+      throw e1
+      // console.warn('Spotter webgpu unavailable, falling back to local wasm:', e1);
+      // this.spotter = await ort.InferenceSession.create(spotterUrl, {
+      //   executionProviders: ['wasm'],
+      //   graphOptimizationLevel: 'all'
+      // });
     }
 
     if (onStatus) onStatus('Initializing PaddleOCR Wasm engine...');
@@ -240,13 +250,13 @@ export class LprEngine {
     return dedupe(all);
   }
 
-  async readWithOcr(image, box, detScore) {
+  async readWithOcr(image, box, detScore, quad) {
     if (!this.paddleOcr) {
       return { text: '', minConf: 0, confident: false, refinedQuad: null };
     }
 
     try {
-      const crop = preprocessPlateCrop(image, box);
+      const crop = preprocessPlateCrop(image, box, quad);
       const results = await this.paddleOcr.predict(crop.canvas);
       const res = results && results[0];
 
@@ -320,7 +330,7 @@ export class LprEngine {
     const out = [];
 
     for (const d of dets) {
-      const ocrResult = await this.readWithOcr(image, d.box, d.score);
+      const ocrResult = await this.readWithOcr(image, d.box, d.score, d.quad);
       if (!ocrResult.text || ocrResult.text.length < 2) continue;
 
       out.push({

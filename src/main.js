@@ -53,7 +53,8 @@ let activeMode = 'idle'; // 'camera', 'static', 'idle'
 // Web Audio API context for chime
 let audioCtx = null;
 function playMatchChime() {
-  if (!audioChimeToggle.checked) return;
+  // Audio chime gets annoying in video
+  return;
   try {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();

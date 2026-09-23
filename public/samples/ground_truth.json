@@ -1,0 +1,257 @@
+[
+  {
+    "id": "car_cal8942",
+    "name": "Car 1 (car_cal8942.jpg)",
+    "filename": "car_cal8942.jpg",
+    "path": "/samples/car_cal8942.jpg",
+    "primaryPlate": "CAL8942",
+    "allPlates": ["CAL8942"],
+    "vehicles": [
+      {
+        "description": "Blue Volkswagen Golf (front)",
+        "plate": "CAL8942",
+        "format": "Single-line oblong (white background)"
+      }
+    ]
+  },
+  {
+    "id": "car_b391klt",
+    "name": "Car 2 (car_b391klt.jpg)",
+    "filename": "car_b391klt.jpg",
+    "path": "/samples/car_b391klt.jpg",
+    "primaryPlate": "B391KLT",
+    "allPlates": ["B391KLT"],
+    "vehicles": [
+      {
+        "description": "Red Mazda CX-5 (front)",
+        "plate": "B391KLT",
+        "format": "Single-line oblong (white background)"
+      }
+    ]
+  },
+  {
+    "id": "photo_0603",
+    "name": "Photo 1 (IMG20260923200603.jpg)",
+    "filename": "IMG20260923200603.jpg",
+    "path": "/samples/photos/IMG20260923200603.jpg",
+    "primaryPlate": "SDN6618H",
+    "allPlates": ["SDN6618H", "SMJ6650C", "SBU999J"],
+    "vehicles": [
+      {
+        "description": "White Honda Freed MPV (front left)",
+        "plate": "SDN6618H",
+        "format": "Two-line square stacked (black background, white font)"
+      },
+      {
+        "description": "White Kia Sorento SUV (rear center)",
+        "plate": "SMJ6650C",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "Grey BMW 2-series Gran Coupe (rear right)",
+        "plate": "SBU999J",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  },
+  {
+    "id": "photo_0608",
+    "name": "Photo 2 (IMG20260923200608.jpg)",
+    "filename": "IMG20260923200608.jpg",
+    "path": "/samples/photos/IMG20260923200608.jpg",
+    "primaryPlate": "SMJ6650C",
+    "allPlates": ["SMJ6650C", "ES3960A"],
+    "vehicles": [
+      {
+        "description": "White Kia Sorento SUV (rear center)",
+        "plate": "SMJ6650C",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "Grey BMW 3-series (distant right)",
+        "plate": "ES3960A",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  },
+  {
+    "id": "photo_0610",
+    "name": "Photo 3 (IMG20260923200610.jpg)",
+    "filename": "IMG20260923200610.jpg",
+    "path": "/samples/photos/IMG20260923200610.jpg",
+    "primaryPlate": "SML6579R",
+    "allPlates": ["SML6579R", "ES3960A", "SNF9945S", "SLX9361E"],
+    "vehicles": [
+      {
+        "description": "White BMW 2-series Active Tourer (front center)",
+        "plate": "SML6579R",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "Grey BMW 3-series (distant left)",
+        "plate": "ES3960A",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "Silver Toyota Sienta MPV (distant left)",
+        "plate": "SNF9945S",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "Silver Toyota Vios sedan (distant far-left)",
+        "plate": "SLX9361E",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  },
+  {
+    "id": "photo_0618",
+    "name": "Photo 4 (IMG20260923200618.jpg)",
+    "filename": "IMG20260923200618.jpg",
+    "path": "/samples/photos/IMG20260923200618.jpg",
+    "primaryPlate": "SNF9945S",
+    "allPlates": ["ES3960A", "SNF9945S", "SKG516L", "SLX9361E"],
+    "vehicles": [
+      {
+        "description": "Silver Toyota Vios sedan (left rear)",
+        "plate": "SLX9361E",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "Grey BMW 3-series (center-left front)",
+        "plate": "ES3960A",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "Silver Toyota Sienta MPV (center-right front)",
+        "plate": "SNF9945S",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "Grey Mercedes-Benz C-Class (right front)",
+        "plate": "SKG516L",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  },
+  {
+    "id": "photo_0621",
+    "name": "Photo 5 (IMG20260923200621.jpg)",
+    "filename": "IMG20260923200621.jpg",
+    "path": "/samples/photos/IMG20260923200621.jpg",
+    "primaryPlate": "SNF9945S",
+    "allPlates": ["SNF9945S", "SKG516L"],
+    "vehicles": [
+      {
+        "description": "Silver Toyota Sienta MPV (left front)",
+        "plate": "SNF9945S",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "Grey Mercedes-Benz C-Class (right front)",
+        "plate": "SKG516L",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  },
+  {
+    "id": "photo_0627",
+    "name": "Photo 6 (IMG20260923200627.jpg)",
+    "filename": "IMG20260923200627.jpg",
+    "path": "/samples/photos/IMG20260923200627.jpg",
+    "primaryPlate": "SJV7999M",
+    "allPlates": ["SJV7999M", "SNF5763B", "SMK8800G"],
+    "vehicles": [
+      {
+        "description": "Black BYD Seal EV (foreground center)",
+        "plate": "SJV7999M",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "Grey SUV (midground left)",
+        "plate": "SNF5763B",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "Black SUV (midground center)",
+        "plate": "SMK8800G",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  },
+  {
+    "id": "photo_0629",
+    "name": "Photo 7 (IMG20260923200629.jpg)",
+    "filename": "IMG20260923200629.jpg",
+    "path": "/samples/photos/IMG20260923200629.jpg",
+    "primaryPlate": "SLE5647H",
+    "allPlates": ["SLE5647H"],
+    "vehicles": [
+      {
+        "description": "White Mercedes-Benz CLA (foreground center)",
+        "plate": "SLE5647H",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  },
+  {
+    "id": "photo_0637",
+    "name": "Photo 8 (IMG20260923200637.jpg)",
+    "filename": "IMG20260923200637.jpg",
+    "path": "/samples/photos/IMG20260923200637.jpg",
+    "primaryPlate": "SNY9977A",
+    "allPlates": ["SJS561D", "SNY9977A", "SMU5178Z"],
+    "vehicles": [
+      {
+        "description": "Dark grey Honda CR-V (left front)",
+        "plate": "SJS561D",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "White Mercedes-Benz GLB (center front)",
+        "plate": "SNY9977A",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "White Mazda 2 (right front)",
+        "plate": "SMU5178Z",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  },
+  {
+    "id": "photo_0640",
+    "name": "Photo 9 (IMG20260923200640.jpg)",
+    "filename": "IMG20260923200640.jpg",
+    "path": "/samples/photos/IMG20260923200640.jpg",
+    "primaryPlate": "SJS561D",
+    "allPlates": ["SJS561D", "SND33T"],
+    "vehicles": [
+      {
+        "description": "Dark grey Honda CR-V (foreground right)",
+        "plate": "SJS561D",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "Dark Hyundai Palisade (left behind pillar)",
+        "plate": "SND33T",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  },
+  {
+    "id": "photo_0643",
+    "name": "Photo 10 (IMG20260923200643.jpg)",
+    "filename": "IMG20260923200643.jpg",
+    "path": "/samples/photos/IMG20260923200643.jpg",
+    "primaryPlate": "SND33T",
+    "allPlates": ["SND33T"],
+    "vehicles": [
+      {
+        "description": "Dark Hyundai Palisade (foreground center)",
+        "plate": "SND33T",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  }
+]

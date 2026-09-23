@@ -1,9 +1,11 @@
 import { defineConfig } from 'vite';
 import fs from 'fs';
 import path from 'path';
+import basicSsl from '@vitejs/plugin-basic-ssl'
+
 
 export default defineConfig({
-  base: '/lprapp/',
+  base: '/',
   server: {
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
@@ -11,6 +13,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    basicSsl(),
     {
       name: 'serve-wasm-and-models',
       configureServer(server) {
