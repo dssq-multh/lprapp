@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ALPR Sentinel - License Plate Recognition</title>
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Top Navigation Header -->
+      <header class="app-header">
+        <div class="brand">
+          <div class="logo-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+              <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+              <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6" />
+              <circle cx="16.5" cy="7.5" r="2.5" fill="#10b981" stroke="none" />
+            </svg>
+          </div>
+          <div>
+            <h1>ALPR Sentinel</h1>
+            <span class="subtitle">Wasm In-Browser License Plate Recognition</span>
+          </div>
+        </div>
+
+        <div class="header-status">
+          <div id="engineStatusBadge" class="status-badge loading">
+            <span class="status-dot"></span>
+            <span id="engineStatusText">Initializing Wasm engine...</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Layout: Full Height Split View -->
+      <main class="main-container">
+        
+        <!-- Left Panel: Textarea scaled to fit the height of the page -->
+        <section class="left-panel">
+          <div class="panel-header">
+            <div class="panel-title-row">
+              <div class="title-with-badge">
+                <h2>Target License Plates</h2>
+                <span id="plateCountBadge" class="badge">0 plates</span>
+              </div>
+            </div>
+            <p class="panel-desc">Paste license plates below (one per line). Green tick if in list, red cross if unlisted.</p>
+            
+            <!-- Prominent action bar next to the textarea -->
+            <div class="plate-action-bar">
+              <button id="btnRecognize" class="btn btn-primary btn-recognize" title="Start Camera and Plate Recognition">
+                <span class="btn-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M3 7a2 2 0 0 1 2 -2h3l2 -2h4l2 2h3a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z" />
+                  </svg>
+                </span>
+                <span id="btnRecognizeText">Recognize!</span>
+              </button>
+
+              <div class="helper-buttons">
+                <button id="btnSamplePlates" class="btn btn-ghost btn-sm" title="Insert sample plates (e.g. CAL8942, B391KLT)">
+                  + Sample Plates
+                </button>
+                <button id="btnClearPlates" class="btn btn-ghost btn-sm text-danger" title="Clear plate list">
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- The Textarea scaled to fit the page height -->
+          <div class="textarea-wrapper">
+            <textarea
+              id="platesTextarea"
+              class="plates-textarea"
+              placeholder="CAL8942&#10;ABC1234&#10;XYZ999&#10;Paste any number of license plates here..."
+              spellcheck="false"
+              autocomplete="off"
+            ></textarea>
+            
+            <div class="textarea-footer">
+              <span class="footer-tip">💡 Matches are whitespace and case-insensitive</span>
+              <span id="matchStatsBadge" class="match-stats">0 matches found</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right Panel: Camera & Live Recognition Viewport -->
+        <section class="right-panel">
+          <!-- Control Bar for Viewport -->
+          <div class="viewport-toolbar">
+            <div class="toolbar-left">
+              <!-- Camera Selector -->
+              <div class="camera-select-wrap">
+                <label for="cameraSelect" class="sr-only">Camera</label>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M15 10l4.553 -2.276a1 1 0 0 1 1.447 .894v6.764a1 1 0 0 1 -1.447 .894l-4.553 -2.276v-4z" />
+                  <rect x="3" y="6" width="12" height="12" rx="2" />
+                </svg>
+                <select id="cameraSelect" class="camera-select">
+                  <option value="prefer-environment">Forward Facing Camera (Preferred)</option>
+                </select>
+              </div>
+
+              <!-- Test Sample Dropdown / Buttons -->
+              <div class="sample-actions">
+                <button id="btnSample1" class="btn btn-ghost btn-xs" title="Load sample car with plate CAL8942">
+                  Car 1 (CAL8942)
+                </button>
+                <button id="btnSample2" class="btn btn-ghost btn-xs" title="Load sample car with plate B391KLT">
+                  Car 2 (B391KLT)
+                </button>
+                <label class="btn btn-ghost btn-xs upload-btn" title="Upload a vehicle picture">
+                  <input type="file" id="fileInput" accept="image/*" style="display:none;" />
+                  Upload Photo
+                </label>
+              </div>
+            </div>
+
+            <div class="toolbar-right">
+              <div class="perf-stats">
+                <span id="scanFpsText">-- FPS</span>
+                <span class="perf-divider">•</span>
+                <span id="scanLatencyText">-- ms</span>
+                <span class="perf-divider">•</span>
+                <span id="scanResText">Max 1080px</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Video & Canvas Viewport Container -->
+          <div class="viewport-container" id="viewportContainer">
+            <video id="videoElement" playsinline autoplay muted></video>
+            <img id="staticImageElement" alt="Static Test Preview" style="display:none;" />
+            <canvas id="overlayCanvas"></canvas>
+
+            <!-- Idle / Getting Started Overlay -->
+            <div id="idleOverlay" class="idle-overlay">
+              <div class="idle-card">
+                <div class="idle-icon-wrap">
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M3 7a2 2 0 0 1 2 -2h3l2 -2h4l2 2h3a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z" />
+                  </svg>
+                </div>
+                <h3>Camera Stream Inactive</h3>
+                <p>Click <strong class="text-primary">"Recognize!"</strong> to start streaming pictures from your camera.</p>
+                <div class="idle-actions">
+                  <button id="btnIdleStart" class="btn btn-primary">Start Camera</button>
+                  <button id="btnIdleSample" class="btn btn-secondary">Try Sample Car</button>
+                </div>
+                <div class="idle-features">
+                  <span>✓ Max 1080px resolution fitting</span>
+                  <span>✓ Green tick for listed plates</span>
+                  <span>✓ Red cross for unlisted plates</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recognition Active Indicator Badge -->
+            <div id="streamBadge" class="stream-active-badge" style="display:none;">
+              <span class="pulsing-record-dot"></span>
+              <span id="streamBadgeText">LIVE RECOGNIZING</span>
+            </div>
+          </div>
+
+          <!-- Detections History & Match Feed -->
+          <div class="detections-feed-container">
+            <div class="feed-header">
+              <div class="feed-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+                <span>Live Detections Feed</span>
+              </div>
+              <div class="feed-controls">
+                <label class="toggle-label" title="Play audio chime when a listed plate is spotted">
+                  <input type="checkbox" id="audioChimeToggle" checked />
+                  <span>Audio Alert</span>
+                </label>
+                <button id="btnClearFeed" class="btn btn-ghost btn-xs text-muted">Clear Feed</button>
+              </div>
+            </div>
+
+            <div id="detectionsList" class="detections-list">
+              <div class="empty-feed-text">No plates spotted yet. Start streaming or try a sample image!</div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
