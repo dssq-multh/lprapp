@@ -326,10 +326,26 @@ export class LprEngine {
   }
 
   async readAll(image, opts = {}) {
+    const maxBoxes = opts.maxBoxes !== undefined ? opts.maxBoxes : 5;
     const dets = await this.detect(image, opts);
+
+    // Limit candidate boxes sent to PaddleOCR to at most maxBoxes (default 5),
+    // prioritizing the largest texts (by box area) to prevent latency spikes and
+    // bounding box flooding when pointing at text-dense scenes (e.g. paper or documents).
+    const prioritizedDets = dets
+      .sort((a, b) => {
+        const areaA = a.box.width * a.box.height;
+        const areaB = b.box.width * b.box.height;
+        if (Math.abs(areaB - areaA) > Math.min(areaA, areaB) * 0.15) {
+          return areaB - areaA; // Largest text first
+        }
+        return b.score - a.score; // Higher confidence secondary
+      })
+      .slice(0, maxBoxes);
+
     const out = [];
 
-    for (const d of dets) {
+    for (const d of prioritizedDets) {
       const ocrResult = await this.readWithOcr(image, d.box, d.score, d.quad);
       if (!ocrResult.text || ocrResult.text.length < 2) continue;
 
