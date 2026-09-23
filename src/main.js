@@ -23,20 +23,27 @@ const scanFpsText = document.getElementById('scanFpsText');
 const scanLatencyText = document.getElementById('scanLatencyText');
 const scanResText = document.getElementById('scanResText');
 
-const btnSample1 = document.getElementById('btnSample1');
-const btnSample2 = document.getElementById('btnSample2');
+const sampleSelect = document.getElementById('sampleSelect');
+const btnPrevSample = document.getElementById('btnPrevSample');
+const btnNextSample = document.getElementById('btnNextSample');
 const fileInput = document.getElementById('fileInput');
 const detectionsList = document.getElementById('detectionsList');
 const btnClearFeed = document.getElementById('btnClearFeed');
 const audioChimeToggle = document.getElementById('audioChimeToggle');
 
 // State
+let targetPlates = new Set();
 const engine = new LprEngine({ base: '/lpr/' });
+if (typeof window !== 'undefined') {
+  window.__lprEngine = engine;
+  window.__fitFrameToMax1080 = fitFrameToMax1080;
+  window.__matchPlate = matchPlate;
+  window.__getTargetPlates = () => targetPlates;
+}
 let isStreaming = false;
 let mediaStream = null;
 let isProcessingFrame = false;
 let animationFrameId = null;
-let targetPlates = new Set();
 let lastSpottedPlates = new Map(); // Plate -> { timestamp, match, count }
 let lastProcessedTime = 0;
 let frameCount = 0;
@@ -78,6 +85,45 @@ function playMatchChime() {
 function normalizePlate(str) {
   if (!str) return '';
   return str.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+/**
+ * Canonical plate for matching:
+ * The ONLY permitted substitutions:
+ * I <=> 1
+ * O <=> 0
+ * 6 and 8 must NEVER match (6<!>8).
+ */
+function canonicalPlate(str) {
+  return normalizePlate(str)
+    .replace(/I/g, '1')
+    .replace(/O/g, '0');
+}
+
+/**
+ * Matches detected plate against target list:
+ * 1. Exact match
+ * 2. ONLY permitted substitutions (I<=>1 and O<=>0)
+ * Note: 6 and 8 are strictly separate (6<!>8).
+ */
+function matchPlate(rawDetected, targetSet) {
+  const norm = normalizePlate(rawDetected);
+  if (!norm || norm.length < 2) return { isMatch: false, matchedPlate: null };
+
+  // 1. Exact match
+  if (targetSet.has(norm)) {
+    return { isMatch: true, matchedPlate: norm };
+  }
+
+  // 2. The ONLY permitted substitutions: I<=>1 and O<=>0
+  const canonDet = canonicalPlate(norm);
+  for (const target of targetSet) {
+    if (canonicalPlate(target) === canonDet) {
+      return { isMatch: true, matchedPlate: target };
+    }
+  }
+
+  return { isMatch: false, matchedPlate: null };
 }
 
 /**
@@ -334,30 +380,24 @@ function clearOverlay() {
 function renderBoundingBoxes(detections, fitted, source) {
   const container = document.getElementById('viewportContainer');
   const containerRect = container.getBoundingClientRect();
+  const cW = containerRect.width;
+  const cH = containerRect.height;
+  if (!cW || !cH) return;
 
   // Match overlay canvas size to displayed source element
-  const sourceW = source.videoWidth || source.naturalWidth || source.width;
-  const sourceH = source.videoHeight || source.naturalHeight || source.height;
+  const sourceW = source.videoWidth || source.naturalWidth || source.width || 1;
+  const sourceH = source.videoHeight || source.naturalHeight || source.height || 1;
 
-  // Calculate actual rendered dimensions within the contain box
-  const containerAspect = containerRect.width / containerRect.height;
-  const sourceAspect = sourceW / sourceH;
+  // Since #videoElement and #staticImageElement have width: 100%, height: 100%, object-fit: contain,
+  // the rendered content fits within (cW, cH) centered along the unconstrained axis.
+  const scale = Math.min(cW / sourceW, cH / sourceH);
+  const renderW = sourceW * scale;
+  const renderH = sourceH * scale;
+  const renderX = (cW - renderW) / 2;
+  const renderY = (cH - renderH) / 2;
 
-  let renderW, renderH, renderX, renderY;
-  if (sourceAspect > containerAspect) {
-    renderW = containerRect.width;
-    renderH = containerRect.width / sourceAspect;
-    renderX = 0;
-    renderY = (containerRect.height - renderH) / 2;
-  } else {
-    renderH = containerRect.height;
-    renderW = containerRect.height * sourceAspect;
-    renderX = (containerRect.width - renderW) / 2;
-    renderY = 0;
-  }
-
-  overlayCanvas.width = containerRect.width;
-  overlayCanvas.height = containerRect.height;
+  overlayCanvas.width = cW;
+  overlayCanvas.height = cH;
 
   const ctx = overlayCanvas.getContext('2d');
   ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
@@ -372,8 +412,9 @@ function renderBoundingBoxes(detections, fitted, source) {
 
   for (const det of detections) {
     const rawText = det.text || '';
-    const norm = normalizePlate(rawText);
-    const isMatch = targetPlates.has(norm);
+    const matchRes = matchPlate(rawText, targetPlates);
+    const isMatch = matchRes.isMatch;
+    const displayPlate = rawText || matchRes.matchedPlate || 'PLATE';
 
     if (isMatch) {
       matchedCountInFrame++;
@@ -421,13 +462,13 @@ function renderBoundingBoxes(detections, fitted, source) {
     ctx.fill();
     ctx.stroke();
 
-    // 2. Stylish corner brackets for enhanced high-tech readability
-    drawCornerBrackets(ctx, left, top, width, height, strokeColor);
+    // 2. Stylish oriented corner accents pointing along the true perspective edges
+    drawOrientedCorners(ctx, quad, strokeColor);
 
     // 3. Draw Top Pill Badge with Tick/Cross, Plate Text, and Confidence
     ctx.shadowBlur = 0;
     const confPercent = Math.round((det.minConf || 0) * 100);
-    const label = `${symbol} ${rawText} (${confPercent}%) - ${statusText}`;
+    const label = `${symbol} ${displayPlate} (${confPercent}%) - ${statusText}`;
     
     ctx.font = 'bold 13px "JetBrains Mono", monospace';
     const textWidth = ctx.measureText(label).width;
@@ -435,8 +476,12 @@ function renderBoundingBoxes(detections, fitted, source) {
     const badgePaddingY = 6;
     const badgeW = textWidth + badgePaddingX * 2;
     const badgeH = 26;
-    const badgeX = Math.max(10, Math.min(overlayCanvas.width - badgeW - 10, left));
-    const badgeY = Math.max(10, top - badgeH - 6);
+
+    // Centered above the top edge of the oriented quad
+    const topMidX = (quad[0][0] + quad[1][0]) / 2;
+    const topMinY = Math.min(quad[0][1], quad[1][1]);
+    const badgeX = Math.max(10, Math.min(overlayCanvas.width - badgeW - 10, topMidX - badgeW / 2));
+    const badgeY = Math.max(10, topMinY - badgeH - 8);
 
     // Badge background
     ctx.fillStyle = strokeColor;
@@ -449,10 +494,12 @@ function renderBoundingBoxes(detections, fitted, source) {
     ctx.textBaseline = 'middle';
     ctx.fillText(label, badgeX + badgePaddingX, badgeY + badgeH / 2);
 
-    // 4. Prominent Tick or Cross Badge Icon next to the box
+    // 4. Prominent Tick or Cross Badge Icon next to the right edge of the oriented quad
     const iconRadius = 14;
-    const iconX = Math.min(overlayCanvas.width - iconRadius - 8, right + iconRadius + 4);
-    const iconY = top + height / 2;
+    const rightMidX = (quad[1][0] + quad[2][0]) / 2;
+    const rightMidY = (quad[1][1] + quad[2][1]) / 2;
+    const iconX = Math.min(overlayCanvas.width - iconRadius - 8, rightMidX + iconRadius + 6);
+    const iconY = rightMidY;
 
     ctx.fillStyle = strokeColor;
     ctx.beginPath();
@@ -475,41 +522,54 @@ function renderBoundingBoxes(detections, fitted, source) {
 }
 
 /**
- * Draws stylish corner brackets on bounding box.
+ * Draws oriented corner accents along the true polygon edges.
+ * Accurately tracks the perspective tilt and rotation of the plate.
  */
-function drawCornerBrackets(ctx, x, y, w, h, color) {
-  const len = Math.min(w * 0.25, h * 0.4, 18);
+function drawOrientedCorners(ctx, quad, color) {
+  ctx.save();
   ctx.strokeStyle = color;
   ctx.lineWidth = 4;
   ctx.lineCap = 'round';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 8;
 
-  // Top-left
-  ctx.beginPath();
-  ctx.moveTo(x, y + len);
-  ctx.lineTo(x, y);
-  ctx.lineTo(x + len, y);
-  ctx.stroke();
+  const N = quad.length;
+  for (let i = 0; i < N; i++) {
+    const curr = quad[i];
+    const prev = quad[(i - 1 + N) % N];
+    const next = quad[(i + 1) % N];
 
-  // Top-right
-  ctx.beginPath();
-  ctx.moveTo(x + w - len, y);
-  ctx.lineTo(x + w, y);
-  ctx.lineTo(x + w, y + len);
-  ctx.stroke();
+    // Unit vector towards prev
+    const dPrevX = prev[0] - curr[0];
+    const dPrevY = prev[1] - curr[1];
+    const lenPrev = Math.hypot(dPrevX, dPrevY) || 1;
+    const arm1 = Math.min(18, lenPrev * 0.35);
 
-  // Bottom-right
-  ctx.beginPath();
-  ctx.moveTo(x + w, y + h - len);
-  ctx.lineTo(x + w, y + h);
-  ctx.lineTo(x + w - len, y + h);
-  ctx.stroke();
+    // Unit vector towards next
+    const dNextX = next[0] - curr[0];
+    const dNextY = next[1] - curr[1];
+    const lenNext = Math.hypot(dNextX, dNextY) || 1;
+    const arm2 = Math.min(18, lenNext * 0.35);
 
-  // Bottom-left
-  ctx.beginPath();
-  ctx.moveTo(x + len, y + h);
-  ctx.lineTo(x, y + h);
-  ctx.lineTo(x, y + h - len);
-  ctx.stroke();
+    // Draw arm towards prev
+    ctx.beginPath();
+    ctx.moveTo(curr[0], curr[1]);
+    ctx.lineTo(curr[0] + (dPrevX / lenPrev) * arm1, curr[1] + (dPrevY / lenPrev) * arm1);
+    ctx.stroke();
+
+    // Draw arm towards next
+    ctx.beginPath();
+    ctx.moveTo(curr[0], curr[1]);
+    ctx.lineTo(curr[0] + (dNextX / lenNext) * arm2, curr[1] + (dNextY / lenNext) * arm2);
+    ctx.stroke();
+
+    // Small vertex dot
+    ctx.beginPath();
+    ctx.arc(curr[0], curr[1], 2, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 /**
@@ -536,8 +596,9 @@ function updateDetectionsFeed(detections) {
 
   for (const det of detections) {
     const raw = det.text.trim();
-    const norm = normalizePlate(raw);
-    const isMatch = targetPlates.has(norm);
+    const matchRes = matchPlate(raw, targetPlates);
+    const isMatch = matchRes.isMatch;
+    const norm = isMatch ? matchRes.matchedPlate : normalizePlate(raw);
 
     const prev = lastSpottedPlates.get(norm);
     // Rate limit feed cards to once per 2.5 seconds per unique plate
@@ -596,7 +657,8 @@ function renderFeedList() {
 }
 
 /**
- * Loads a static test image (e.g. Car 1 or Car 2).
+ * Loads a static test image (e.g. Car 1, Car 2, or uploaded photo)
+ * and renders the downscaled 1080px content so visual display matches what AI sees.
  */
 async function loadStaticImage(url) {
   if (isStreaming) {
@@ -609,14 +671,25 @@ async function loadStaticImage(url) {
   staticImageElement.style.display = 'block';
 
   engineStatusBadge.className = 'status-badge active';
-  engineStatusText.textContent = 'Analyzing Image...';
+  engineStatusText.textContent = 'Downsampling to 1080px...';
 
-  staticImageElement.onload = async () => {
-    await processCurrentFrame();
-    engineStatusBadge.className = 'status-badge ready';
-    engineStatusText.textContent = 'Image Analyzed';
+  const tempImg = new Image();
+  tempImg.crossOrigin = 'anonymous';
+  tempImg.onload = async () => {
+    // Shrink full-resolution image to max 1080px
+    const fitted = fitFrameToMax1080(tempImg);
+    if (!fitted) return;
+
+    // Render the 1080px content visually so the user sees the exact resolution AI processes
+    staticImageElement.onload = async () => {
+      engineStatusText.textContent = 'Analyzing 1080px Frame...';
+      await processCurrentFrame();
+      engineStatusBadge.className = 'status-badge ready';
+      engineStatusText.textContent = 'Image Analyzed (1080px View)';
+    };
+    staticImageElement.src = fitted.canvas.toDataURL('image/jpeg', 0.95);
   };
-  staticImageElement.src = url;
+  tempImg.src = url;
 }
 
 // Event Listeners
@@ -651,8 +724,27 @@ platesTextarea.addEventListener('input', () => {
   }
 });
 
+const SAMPLE_TARGET_PLATES = [
+  'CAL8942',
+  'B391KLT',
+  'SDN6618H',
+  'SMJ6650C',
+  'SBU999J',
+  'SML6579R',
+  'ES3960A',
+  'SLX9361E',
+  'SNF9945S',
+  'SKG516L',
+  'SJV7999M',
+  'SLE5647H',
+  'SNY9977A',
+  'SMU5178Z',
+  'SJS561D',
+  'SND33T'
+].join('\n');
+
 btnSamplePlates.addEventListener('click', () => {
-  platesTextarea.value = 'CAL8942\nABC1234\nXYZ-999\nNY-5432';
+  platesTextarea.value = SAMPLE_TARGET_PLATES;
   updateTargetPlates();
   if (activeMode !== 'idle') {
     processCurrentFrame();
@@ -667,12 +759,26 @@ btnClearPlates.addEventListener('click', () => {
   }
 });
 
-btnSample1.addEventListener('click', () => {
-  loadStaticImage('/samples/car_cal8942.jpg');
+sampleSelect.addEventListener('change', () => {
+  const url = sampleSelect.value;
+  if (url) {
+    loadStaticImage(url);
+  }
 });
 
-btnSample2.addEventListener('click', () => {
-  loadStaticImage('/samples/car_b391klt.jpg');
+btnPrevSample.addEventListener('click', () => {
+  const total = sampleSelect.options.length;
+  let idx = sampleSelect.selectedIndex - 1;
+  if (idx < 0) idx = total - 1;
+  sampleSelect.selectedIndex = idx;
+  loadStaticImage(sampleSelect.value);
+});
+
+btnNextSample.addEventListener('click', () => {
+  const total = sampleSelect.options.length;
+  let idx = (sampleSelect.selectedIndex + 1) % total;
+  sampleSelect.selectedIndex = idx;
+  loadStaticImage(sampleSelect.value);
 });
 
 fileInput.addEventListener('change', (e) => {
@@ -700,7 +806,7 @@ window.addEventListener('resize', () => {
 // Initialization
 async function initApp() {
   // Prepopulate sample plates so user gets immediate visual feedback
-  platesTextarea.value = 'CAL8942\nABC-1234\nXYZ-999';
+  platesTextarea.value = SAMPLE_TARGET_PLATES;
   updateTargetPlates();
 
   await setupCameraDevices();

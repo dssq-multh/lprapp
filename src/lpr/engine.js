@@ -1,16 +1,13 @@
 import * as ort from 'onnxruntime-web';
+import { PaddleOCR } from '@paddleocr/paddleocr-js';
 import { letterbox, unletterboxQuad } from './preprocess.js';
 import { decodeSpotter } from './decoder_spotter.js';
-import { cropToTensor } from './warp.js';
-import { decodeAttention } from './decoder_recognizer.js';
 
 const SPOT_W = 416, SPOT_H = 256;
-const REC_W = 130, REC_H = 70;
-const TILE_W = 624, TILE_H = 384, OVERLAP = 0.25;
-const DET_THRESH = 0.25;
+const TILE_W = 384, TILE_H = 240, OVERLAP = 0.25;
+
+export const DEFAULT_DET_THRESH = 0.19;
 const NMS_IOU = 0.30;
-const READ_FLOOR = 0.40;
-const PAD_X = 0.10, PAD_Y = 0.22;
 
 function boxOf(quad) {
   const xs = quad.map((p) => p[0]), ys = quad.map((p) => p[1]);
@@ -59,27 +56,118 @@ function cut(img, t) {
   return c;
 }
 
+/**
+ * Refines the raw bounding box to snap precisely to the bright plate surface.
+ * Eliminates outer mounting brackets, dark bumper areas, and mounting bolts.
+ */
+function refinePlateBox(sourceCanvas, rawBox) {
+  try {
+    const marginX = Math.round(rawBox.width * 0.08);
+    const marginY = Math.round(rawBox.height * 0.15);
+    const cropX = Math.max(0, Math.floor(rawBox.left - marginX));
+    const cropY = Math.max(0, Math.floor(rawBox.top - marginY));
+    const cropW = Math.max(10, Math.min(sourceCanvas.width - cropX, Math.ceil(rawBox.width + marginX * 2)));
+    const cropH = Math.max(10, Math.min(sourceCanvas.height - cropY, Math.ceil(rawBox.height + marginY * 2)));
+
+    const c = new OffscreenCanvas(cropW, cropH);
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(sourceCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+    const imgData = ctx.getImageData(0, 0, cropW, cropH);
+    const data = imgData.data;
+
+    const colBright = new Array(cropW).fill(0);
+    const rowBright = new Array(cropH).fill(0);
+
+    for (let y = 0; y < cropH; y++) {
+      for (let x = 0; x < cropW; x++) {
+        const idx = (y * cropW + x) * 4;
+        const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+        if (lum > 130) {
+          colBright[x]++;
+          rowBright[y]++;
+        }
+      }
+    }
+
+    let minX = 0, maxX = cropW - 1;
+    while (minX < cropW && colBright[minX] < cropH * 0.30) minX++;
+    while (maxX > minX && colBright[maxX] < cropH * 0.30) maxX--;
+
+    let minY = 0, maxY = cropH - 1;
+    while (minY < cropH && rowBright[minY] < cropW * 0.30) minY++;
+    while (maxY > minY && rowBright[maxY] < cropW * 0.30) maxY--;
+
+    if (maxX - minX >= rawBox.width * 0.5 && maxY - minY >= rawBox.height * 0.4) {
+      const left = cropX + minX;
+      const top = cropY + minY;
+      const width = maxX - minX;
+      const height = maxY - minY;
+      return {
+        left,
+        top,
+        width,
+        height,
+        quad: [
+          [left, top],
+          [left + width, top],
+          [left + width, top + height],
+          [left, top + height]
+        ]
+      };
+    }
+  } catch (err) {
+    console.warn('refinePlateBox fallback:', err);
+  }
+
+  return rawBox;
+}
+
+/**
+ * Prepares the plate crop for PaddleOCR reading.
+ */
+function preprocessPlateCrop(sourceCanvas, box) {
+  const aspect = box.width / Math.max(1, box.height);
+  const isSquare = aspect < 2.0;
+  const padX = isSquare ? 4 : Math.max(12, Math.round(box.width * 0.22));
+  const padY = 4;
+  const sx = Math.max(0, box.left - padX);
+  const sy = Math.max(0, box.top - padY);
+  const sw = Math.min(sourceCanvas.width - sx, box.width + padX * 2);
+  const sh = Math.min(sourceCanvas.height - sy, box.height + padY * 2);
+
+  const targetH = 48;
+  const targetW = Math.max(64, Math.round((sw * targetH) / sh));
+
+  const c = document.createElement('canvas');
+  c.width = targetW;
+  c.height = targetH;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(sourceCanvas, sx, sy, sw, sh, 0, 0, targetW, targetH);
+
+  return { canvas: c, sx, sy, sw, sh, targetW, targetH };
+}
+
 export class LprEngine {
   constructor(opts = {}) {
     this.base = opts.base || '/lpr/';
     this.spotter = null;
-    this.recogniser = null;
+    this.paddleOcr = null;
     this.isReady = false;
+    this.scoreThreshold = opts.scoreThreshold || DEFAULT_DET_THRESH;
   }
 
   async init(onStatus) {
     if (this.isReady) return;
 
     if (onStatus) onStatus('Configuring WebAssembly runtime...');
-    
-    // Set wasm paths
     ort.env.wasm.wasmPaths = '/ort-wasm/';
     if (typeof window !== 'undefined' && !window.crossOriginIsolated) {
       ort.env.wasm.numThreads = 1;
     }
 
-    if (onStatus) onStatus('Loading license plate detector model (YOLOv5n-OBB)...');
-    
+    if (onStatus) onStatus('Loading license plate detector (YOLOv5n-OBB)...');
     const spotterUrl = `${this.base}models/spotter_b_v12_yuv_pm.onnx`;
     try {
       this.spotter = await ort.InferenceSession.create(spotterUrl, {
@@ -87,131 +175,171 @@ export class LprEngine {
         graphOptimizationLevel: 'all'
       });
     } catch (e1) {
-      console.warn('Initial spotter create failed, trying wasm provider only:', e1);
-      try {
-        this.spotter = await ort.InferenceSession.create(spotterUrl, {
-          executionProviders: ['wasm'],
-          graphOptimizationLevel: 'all'
-        });
-      } catch (e2) {
-        console.warn('Local spotter load failed, trying CDN fallback:', e2);
-        const cdnSpotter = 'https://cdn.jsdelivr.net/gh/OpenIPC/lpr-wasm@main/dist/models/spotter_b_v12_yuv_pm.onnx';
-        this.spotter = await ort.InferenceSession.create(cdnSpotter, {
-          executionProviders: ['wasm'],
-          graphOptimizationLevel: 'all'
-        });
-      }
+      console.warn('Spotter webgpu unavailable, falling back to local wasm:', e1);
+      this.spotter = await ort.InferenceSession.create(spotterUrl, {
+        executionProviders: ['wasm'],
+        graphOptimizationLevel: 'all'
+      });
     }
 
-    if (onStatus) onStatus('Loading license plate OCR recognizer model (TPS-STN)...');
-    const recogUrl = `${this.base}models/recog_f_v26_attn.onnx`;
+    if (onStatus) onStatus('Initializing PaddleOCR Wasm engine...');
     try {
-      this.recogniser = await ort.InferenceSession.create(recogUrl, {
-        executionProviders: ['wasm'],
-        graphOptimizationLevel: 'all'
+      this.paddleOcr = await PaddleOCR.create({
+        textDetectionModelName: 'PP-OCRv6_tiny_det',
+        textDetectionModelAsset: { url: '/models/PP-OCRv6_tiny_det_onnx_infer.tar' },
+        textRecognitionModelName: 'PP-OCRv6_tiny_rec',
+        textRecognitionModelAsset: { url: '/models/PP-OCRv6_tiny_rec_onnx_infer.tar' },
+        ortOptions: {
+          backend: 'wasm',
+          wasmPaths: '/ort-wasm/'
+        }
       });
-    } catch (e1) {
-      console.warn('Local recognizer load failed, trying CDN fallback:', e1);
-      const cdnRecog = 'https://cdn.jsdelivr.net/gh/OpenIPC/lpr-wasm@main/dist/models/recog_f_v26_attn.onnx';
-      this.recogniser = await ort.InferenceSession.create(cdnRecog, {
-        executionProviders: ['wasm'],
-        graphOptimizationLevel: 'all'
-      });
+      console.log('PaddleOCR Wasm engine ready!');
+    } catch (err) {
+      console.error('PaddleOCR initialization error:', err);
     }
 
     this.isReady = true;
-    if (onStatus) onStatus('Wasm models ready!');
+    if (onStatus) onStatus('Wasm ALPR engine ready!');
   }
 
-  async detectIn(canvas, ox, oy) {
+  async detectIn(canvas, ox, oy, thresh) {
     const p = letterbox(canvas, SPOT_W, SPOT_H, { norm: 'yuv' });
     const out = await this.spotter.run({
       [this.spotter.inputNames[0]]: new ort.Tensor('float32', p.tensor, [1, 3, SPOT_H, SPOT_W]),
     });
     const [p3, p4] = this.spotter.outputNames;
-    return decodeSpotter(out, p3, p4, DET_THRESH, NMS_IOU).map((d) => {
-      const q = unletterboxQuad(d.quad, p.scale, p.padX, p.padY)
-        .map((pt) => [pt[0] + ox, pt[1] + oy]);
-      return { quad: q, box: boxOf(q), score: d.score };
-    });
+    const rawDets = decodeSpotter(out, p3, p4, thresh, NMS_IOU);
+
+    return rawDets
+      .map((d) => {
+        const q = unletterboxQuad(d.quad, p.scale, p.padX, p.padY)
+          .map((pt) => [pt[0] + ox, pt[1] + oy]);
+        const box = boxOf(q);
+        const aspect = box.width / Math.max(1, box.height);
+        return { quad: q, box, score: d.score, aspect };
+      })
+      .filter((d) => d.score >= thresh && d.aspect >= 1.2 && d.box.width >= 24 && d.box.height >= 10);
   }
 
   async detect(image, opts = {}) {
+    const thresh = opts.scoreThreshold || this.scoreThreshold;
     const w = image.width, h = image.height;
-    // For smaller images, single pass; for high res, use overlapping tiles
-    const ts = opts.tile === false || (w <= SPOT_W * 1.5 && h <= SPOT_H * 1.5)
-      ? [{ x: 0, y: 0, w, h }]
-      : tiles(w, h);
-    
+    const ts = [{ x: 0, y: 0, w, h }];
+    if (opts.tile !== false && (w > SPOT_W * 1.5 || h > SPOT_H * 1.5)) {
+      ts.push(...tiles(w, h));
+    }
+
     const all = [];
     for (let i = 0; i < ts.length; i++) {
       const t = ts[i];
       const c = (t.w === w && t.h === h && t.x === 0 && t.y === 0) ? image : cut(image, t);
-      all.push(...(await this.detectIn(c, t.x, t.y)));
+      all.push(...(await this.detectIn(c, t.x, t.y, thresh)));
       if (opts.onProgress) opts.onProgress(i + 1, ts.length);
     }
     return dedupe(all);
   }
 
-  async read(image, target, ro = {}) {
-    const quad = Array.isArray(target) ? target : [
-      [target.left, target.top],
-      [target.left + target.width, target.top],
-      [target.left + target.width, target.top + target.height],
-      [target.left, target.top + target.height],
-    ];
-    const padX = ro.padX === undefined ? PAD_X : ro.padX;
-    const padY = ro.padY === undefined ? PAD_Y : ro.padY;
-    const xs = quad.map((q) => q[0]), ys = quad.map((q) => q[1]);
-    let x0 = Math.min(...xs), y0 = Math.min(...ys);
-    let x1 = Math.max(...xs), y1 = Math.max(...ys);
-    const mx = (x1 - x0) * padX, my = (y1 - y0) * padY;
-    x0 = Math.max(0, x0 - mx); y0 = Math.max(0, y0 - my);
-    x1 = Math.min(image.width, x1 + mx); y1 = Math.min(image.height, y1 + my);
+  async readWithOcr(image, box, detScore) {
+    if (!this.paddleOcr) {
+      return { text: '', minConf: 0, confident: false, refinedQuad: null };
+    }
 
-    const cc = new OffscreenCanvas(REC_W, REC_H);
-    const cx = cc.getContext('2d', { willReadFrequently: true });
-    cx.imageSmoothingEnabled = true;
-    cx.imageSmoothingQuality = 'high';
-    cx.drawImage(image, x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0), 0, 0, REC_W, REC_H);
+    try {
+      const crop = preprocessPlateCrop(image, box);
+      const results = await this.paddleOcr.predict(crop.canvas);
+      const res = results && results[0];
 
-    const rgba = cx.getImageData(0, 0, REC_W, REC_H).data;
-    const out = await this.recogniser.run({
-      [this.recogniser.inputNames[0]]: new ort.Tensor('float32',
-        cropToTensor(rgba, REC_W, REC_H, { norm: 'yuv' }), [1, 3, REC_H, REC_W]),
-    });
-    const lg = out[this.recogniser.outputNames[0]];
-    const d = decodeAttention(lg.data, lg.dims[1], lg.dims[2]);
-    return {
-      text: d.text.trim().toUpperCase(),
-      minConf: d.minConf,
-      perChar: d.perPosConf,
-      confident: d.minConf >= READ_FLOOR
-    };
+      let text = '';
+      let ocrConf = detScore;
+      let refinedQuad = null;
+
+      if (res && res.items && res.items.length > 0) {
+        const getY = (pt) => (pt ? (pt.y !== undefined ? pt.y : pt[1]) : 0);
+        const getX = (pt) => (pt ? (pt.x !== undefined ? pt.x : pt[0]) : 0);
+
+        // Multi-line sorting: top line before bottom line, and within line left-to-right
+        res.items.sort((a, b) => {
+          const aY = a.poly && a.poly[0] && a.poly[2] ? (getY(a.poly[0]) + getY(a.poly[2])) / 2 : getY(a.poly?.[0]);
+          const bY = b.poly && b.poly[0] && b.poly[2] ? (getY(b.poly[0]) + getY(b.poly[2])) / 2 : getY(b.poly?.[0]);
+          const aH = a.poly && a.poly[0] && a.poly[2] ? Math.abs(getY(a.poly[2]) - getY(a.poly[0])) : 12;
+          const bH = b.poly && b.poly[0] && b.poly[2] ? Math.abs(getY(b.poly[2]) - getY(b.poly[0])) : 12;
+          const minH = Math.min(aH, bH);
+          if (Math.abs(aY - bY) > minH * 0.45) {
+            return aY - bY; // Top to bottom
+          }
+          const aX = getX(a.poly?.[0]);
+          const bX = getX(b.poly?.[0]);
+          return aX - bX; // Left to right
+        });
+
+        text = res.items
+          .map((item) => item.text)
+          .join('')
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, '');
+
+        const avgScore = res.items.reduce((s, it) => s + (it.score || 0.8), 0) / res.items.length;
+        ocrConf = avgScore;
+
+        // If PaddleOCR detected a valid 4-point text polygon, map it back to image space
+        // so the bounding quadrilateral precisely aligns with the perspective slant and orientation of the text
+        const firstItem = res.items[0];
+        if (firstItem && firstItem.poly && firstItem.poly.length === 4) {
+          const scaleCrop = crop.sw / crop.targetW;
+          const cx = (firstItem.poly[0][0] + firstItem.poly[1][0] + firstItem.poly[2][0] + firstItem.poly[3][0]) / 4;
+          const cy = (firstItem.poly[0][1] + firstItem.poly[1][1] + firstItem.poly[2][1] + firstItem.poly[3][1]) / 4;
+          const expanded = firstItem.poly.map(([px, py]) => [
+            cx + (px - cx) * 1.18,
+            cy + (py - cy) * 1.25
+          ]);
+          refinedQuad = expanded.map(([px, py]) => [
+            crop.sx + px * scaleCrop,
+            crop.sy + py * scaleCrop
+          ]);
+        }
+      }
+
+      const combinedConf = Math.min(0.99, Math.max(0.60, (detScore * 0.4) + (ocrConf * 0.6)));
+
+      return {
+        text,
+        minConf: text ? combinedConf : detScore,
+        confident: text.length >= 3,
+        refinedQuad
+      };
+    } catch (err) {
+      console.warn('PaddleOCR read error:', err);
+      return { text: '', minConf: detScore, confident: false, refinedQuad: null };
+    }
   }
 
   async readAll(image, opts = {}) {
     const dets = await this.detect(image, opts);
     const out = [];
+
     for (const d of dets) {
-      try {
-        const readResult = await this.read(image, d.quad, opts);
-        out.push({ ...d, ...readResult });
-      } catch (err) {
-        console.warn('Plate read error:', err);
-        out.push({ ...d, text: '', minConf: 0, perChar: [], confident: false });
-      }
+      const ocrResult = await this.readWithOcr(image, d.box, d.score);
+      if (!ocrResult.text || ocrResult.text.length < 2) continue;
+
+      out.push({
+        score: d.score,
+        box: d.box,
+        quad: ocrResult.refinedQuad || d.quad,
+        text: ocrResult.text || '',
+        minConf: ocrResult.minConf || d.score,
+        confident: ocrResult.confident !== false
+      });
     }
-    // Filter out completely blank or gibberish detections and sort by confidence
-    return out
-      .filter((item) => item.text && item.text.length >= 2)
-      .sort((a, b) => b.minConf - a.minConf);
+
+    out.sort((a, b) => b.score - a.score);
+    return out;
   }
 }
 
 /**
- * Fits any video or image frame to max 1080px in width or height
- * as requested: "Fit pictures to max 1080px in width or height."
+ * Fits pictures to max 1080px in width or height
  */
 export function fitFrameToMax1080(source) {
   const origW = source.videoWidth || source.naturalWidth || source.width;

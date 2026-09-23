@@ -110,12 +110,29 @@
 
               <!-- Test Sample Dropdown / Buttons -->
               <div class="sample-actions">
-                <button id="btnSample1" class="btn btn-ghost btn-xs" title="Load sample car with plate CAL8942">
-                  Car 1 (CAL8942)
-                </button>
-                <button id="btnSample2" class="btn btn-ghost btn-xs" title="Load sample car with plate B391KLT">
-                  Car 2 (B391KLT)
-                </button>
+                <div class="sample-select-wrap">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <select id="sampleSelect" class="sample-select" title="Choose from 12 sample car photos">
+                    <option value="/samples/car_cal8942.jpg" selected>🚗 Car 1 (CAL8942)</option>
+                    <option value="/samples/car_b391klt.jpg">🚗 Car 2 (B391KLT)</option>
+                    <option value="/samples/photos/IMG20260923200603.jpg">📸 Photo 1 (0603)</option>
+                    <option value="/samples/photos/IMG20260923200608.jpg">📸 Photo 2 (0608)</option>
+                    <option value="/samples/photos/IMG20260923200610.jpg">📸 Photo 3 (0610)</option>
+                    <option value="/samples/photos/IMG20260923200618.jpg">📸 Photo 4 (0618)</option>
+                    <option value="/samples/photos/IMG20260923200621.jpg">📸 Photo 5 (0621)</option>
+                    <option value="/samples/photos/IMG20260923200627.jpg">📸 Photo 6 (0627)</option>
+                    <option value="/samples/photos/IMG20260923200629.jpg">📸 Photo 7 (0629)</option>
+                    <option value="/samples/photos/IMG20260923200637.jpg">📸 Photo 8 (0637)</option>
+                    <option value="/samples/photos/IMG20260923200640.jpg">📸 Photo 9 (0640)</option>
+                    <option value="/samples/photos/IMG20260923200643.jpg">📸 Photo 10 (0643)</option>
+                  </select>
+                </div>
+                <button id="btnPrevSample" class="btn btn-ghost btn-xs" title="Previous sample photo">◀</button>
+                <button id="btnNextSample" class="btn btn-ghost btn-xs" title="Next sample photo">▶</button>
                 <label class="btn btn-ghost btn-xs upload-btn" title="Upload a vehicle picture">
                   <input type="file" id="fileInput" accept="image/*" style="display:none;" />
                   Upload Photo
