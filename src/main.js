@@ -41,7 +41,7 @@ let isGpuEnabled = typeof localStorage !== 'undefined' && localStorage.getItem(S
 
 let targetPlates = new Set();
 const engine = new LprEngine({
-  base: (import.meta.env.BASE_URL ?? '/') + 'lpr/',
+  base: (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '') + '/lpr/',
   enableGpu: isGpuEnabled
 });
 let activeVideoTrack = null;
@@ -725,7 +725,11 @@ async function loadStaticImage(url) {
     };
     staticImageElement.src = fitted.canvas.toDataURL('image/jpeg', 0.95);
   };
-  tempImg.src = import.meta.env.BASE_URL.replace(/\/$/, '') + url;
+  if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('http://') || url.startsWith('https://')) {
+    tempImg.src = url;
+  } else {
+    tempImg.src = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '') + (url.startsWith('/') ? url : '/' + url);
+  }
 }
 
 // Event Listeners

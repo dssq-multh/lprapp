@@ -212,8 +212,10 @@ export class LprEngine {
   async init(onStatus) {
     if (this.isReady) return;
 
+    const baseUrl = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '') + '/';
+
     if (onStatus) onStatus('Configuring WebAssembly runtime...');
-    ort.env.wasm.wasmPaths = (import.meta.env.BASE_URL ?? '/') + 'ort-wasm/';
+    ort.env.wasm.wasmPaths = `${baseUrl}ort-wasm/`;
     if (typeof window !== 'undefined' && !window.crossOriginIsolated) {
       ort.env.wasm.numThreads = 1;
     }
@@ -246,12 +248,12 @@ export class LprEngine {
     try {
       this.paddleOcr = await PaddleOCR.create({
         textDetectionModelName: 'PP-OCRv6_tiny_det',
-        textDetectionModelAsset: { url: (import.meta.env.BASE_URL ?? '/') + 'models/PP-OCRv6_tiny_det_onnx_infer.tar' },
+        textDetectionModelAsset: { url: `${baseUrl}models/PP-OCRv6_tiny_det_onnx_infer.tar` },
         textRecognitionModelName: 'PP-OCRv6_tiny_rec',
-        textRecognitionModelAsset: { url: (import.meta.env.BASE_URL ?? '/') + 'models/PP-OCRv6_tiny_rec_onnx_infer.tar' },
+        textRecognitionModelAsset: { url: `${baseUrl}models/PP-OCRv6_tiny_rec_onnx_infer.tar` },
         ortOptions: {
           backend: 'wasm',
-          wasmPaths: (import.meta.env.BASE_URL ?? '/') + 'ort-wasm/'
+          wasmPaths: `${baseUrl}ort-wasm/`
         }
       });
       console.log('PaddleOCR Wasm engine ready!');

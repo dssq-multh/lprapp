@@ -5,7 +5,7 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 
 
 export default defineConfig({
-  base: '/',
+  base: '/lprapp/',
   server: {
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
@@ -18,7 +18,8 @@ export default defineConfig({
       name: 'serve-wasm-and-models',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          const url = req.url ? req.url.split('?')[0] : '';
+          const rawUrl = req.url ? req.url.split('?')[0] : '';
+          const url = rawUrl.replace(/^\/lprapp/, '');
           if (url.startsWith('/ort-wasm/')) {
             const filePath = path.join(process.cwd(), 'public', url);
             if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
