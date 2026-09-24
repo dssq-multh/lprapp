@@ -961,6 +961,11 @@ async function initApp() {
     await engine.init((status) => {
       engineStatusText.textContent = status;
     });
+    if (typeof engine.enableGpu === 'boolean' && engine.enableGpu !== isGpuEnabled) {
+      isGpuEnabled = engine.enableGpu;
+      try { localStorage.setItem(STORAGE_KEY_GPU, String(isGpuEnabled)); } catch (_) {}
+      updateGpuUi(isGpuEnabled);
+    }
     engineStatusBadge.className = 'status-badge ready';
     engineStatusText.textContent = `Models Ready (${isGpuEnabled ? 'WebGPU' : 'WASM'})`;
   } catch (err) {

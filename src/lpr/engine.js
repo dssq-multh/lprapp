@@ -172,43 +172,62 @@ export class LprEngine {
     this.enableGpu = opts.enableGpu || false;
   }
 
+  async createSpotterSession(wantGpu) {
+    const spotterUrl = `${this.base}models/spotter_b_v12_yuv_pm.onnx`;
+
+    if (wantGpu) {
+      // First try disabled, then basic optimization to avoid Conv fusion layout bugs on WebGPU
+      for (const optLevel of ['disabled', 'basic', 'all']) {
+        try {
+          console.log(`Validating YOLOv5n-OBB on WebGPU (graphOptimizationLevel: ${optLevel})...`);
+          const session = await ort.InferenceSession.create(spotterUrl, {
+            executionProviders: ['webgpu', 'wasm'],
+            graphOptimizationLevel: optLevel,
+          });
+          // Perform a quick warmup inference to verify WebGPU kernels actually execute without JSEP runtime failures
+          const dummyTensor = new ort.Tensor('float32', new Float32Array(1 * 3 * SPOT_H * SPOT_W), [1, 3, SPOT_H, SPOT_W]);
+          await session.run({ [session.inputNames[0]]: dummyTensor });
+          console.log(`WebGPU validation passed with graphOptimizationLevel: ${optLevel}`);
+          return { session, enableGpu: true };
+        } catch (err) {
+          console.warn(`WebGPU validation failed with optLevel '${optLevel}':`, err);
+        }
+      }
+      console.warn('All WebGPU initialization attempts failed. Reverting to WASM provider.');
+    }
+
+    const wasmSession = await ort.InferenceSession.create(spotterUrl, {
+      executionProviders: ['wasm'],
+      graphOptimizationLevel: 'disabled',
+    });
+    console.log('YOLOv5n-OBB initialized on WASM');
+    return { session: wasmSession, enableGpu: false };
+  }
+
   async setEnableGpu(enabled, onStatus) {
     const nextGpu = Boolean(enabled);
     if (this.enableGpu === nextGpu && this.spotter) {
       return { success: true, enabled: this.enableGpu };
     }
-    this.enableGpu = nextGpu;
-    if (!this.spotter) return { success: true, enabled: this.enableGpu };
+    const providerName = nextGpu ? 'WebGPU' : 'WASM';
+    if (onStatus) onStatus(`Configuring detector for ${providerName}...`);
 
-    const providerName = this.enableGpu ? 'WebGPU' : 'WASM';
-    if (onStatus) onStatus(`Switching YOLO detector to ${providerName}...`);
-
-    const spotterUrl = `${this.base}models/spotter_b_v12_yuv_pm.onnx`;
-    const eps = this.enableGpu ? ['webgpu', 'wasm'] : ['wasm'];
-    const optLevel = this.enableGpu ? 'all' : 'disabled';
     const oldSpotter = this.spotter;
+    const { session, enableGpu } = await this.createSpotterSession(nextGpu);
+    this.spotter = session;
+    this.enableGpu = enableGpu;
 
-    try {
-      this.spotter = await ort.InferenceSession.create(spotterUrl, {
-        executionProviders: eps,
-        graphOptimizationLevel: optLevel,
-      });
-      console.log(`YOLOv5n-OBB switched to providers: [${eps.join(', ')}]`);
-      if (oldSpotter && typeof oldSpotter.release === 'function') {
-        try { await oldSpotter.release(); } catch (_) {}
-      }
-      if (onStatus) onStatus(`YOLO running on ${providerName}`);
-      return { success: true, enabled: this.enableGpu };
-    } catch (err) {
-      console.warn(`Failed to set YOLO execution providers to [${eps.join(', ')}]:`, err);
-      this.spotter = oldSpotter;
-      if (this.enableGpu) {
-        this.enableGpu = false;
-        if (onStatus) onStatus('WebGPU failed, remained on WASM');
-        return { success: false, error: err, reverted: true };
-      }
-      throw err;
+    if (oldSpotter && typeof oldSpotter.release === 'function') {
+      try { await oldSpotter.release(); } catch (_) {}
     }
+
+    if (nextGpu && !enableGpu) {
+      if (onStatus) onStatus('WebGPU unavailable; on WASM');
+      return { success: false, enabled: false, reverted: true };
+    }
+
+    if (onStatus) onStatus(`YOLO running on ${this.enableGpu ? 'WebGPU' : 'WASM'}`);
+    return { success: true, enabled: this.enableGpu };
   }
 
   async init(onStatus) {
@@ -227,27 +246,9 @@ export class LprEngine {
 
     const providerName = this.enableGpu ? 'WebGPU' : 'WASM';
     if (onStatus) onStatus(`Loading license plate detector (YOLOv5n-OBB on ${providerName})...`);
-    const spotterUrl = `${this.base}models/spotter_b_v12_yuv_pm.onnx`;
-    const eps = this.enableGpu ? ['webgpu', 'wasm'] : ['wasm'];
-    const optLevel = this.enableGpu ? 'all' : 'disabled';
-    try {
-      this.spotter = await ort.InferenceSession.create(spotterUrl, {
-        executionProviders: eps,
-        graphOptimizationLevel: optLevel,
-      });
-      console.log(`YOLOv5n-OBB initialized with providers: [${eps.join(', ')}]`);
-    } catch (e1) {
-      if (this.enableGpu) {
-        console.warn('YOLO WebGPU initialization failed, falling back to WASM:', e1);
-        this.enableGpu = false;
-        this.spotter = await ort.InferenceSession.create(spotterUrl, {
-          executionProviders: ['wasm'],
-          graphOptimizationLevel: 'disabled',
-        });
-      } else {
-        throw e1;
-      }
-    }
+    const { session, enableGpu } = await this.createSpotterSession(this.enableGpu);
+    this.spotter = session;
+    this.enableGpu = enableGpu;
 
     if (onStatus) onStatus('Initializing PaddleOCR Wasm engine...');
     try {
@@ -272,9 +273,24 @@ export class LprEngine {
 
   async detectIn(canvas, ox, oy, thresh) {
     const p = letterbox(canvas, SPOT_W, SPOT_H, { norm: 'yuv' });
-    const out = await this.spotter.run({
-      [this.spotter.inputNames[0]]: new ort.Tensor('float32', p.tensor, [1, 3, SPOT_H, SPOT_W]),
-    });
+    let out;
+    try {
+      out = await this.spotter.run({
+        [this.spotter.inputNames[0]]: new ort.Tensor('float32', p.tensor, [1, 3, SPOT_H, SPOT_W]),
+      });
+    } catch (err) {
+      if (this.enableGpu) {
+        console.warn('YOLO spotter run failed on WebGPU at runtime, falling back to WASM:', err);
+        const { session, enableGpu } = await this.createSpotterSession(false);
+        this.spotter = session;
+        this.enableGpu = enableGpu;
+        out = await this.spotter.run({
+          [this.spotter.inputNames[0]]: new ort.Tensor('float32', p.tensor, [1, 3, SPOT_H, SPOT_W]),
+        });
+      } else {
+        throw err;
+      }
+    }
     const [p3, p4] = this.spotter.outputNames;
     const rawDets = decodeSpotter(out, p3, p4, thresh, NMS_IOU);
 

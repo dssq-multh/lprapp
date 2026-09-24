@@ -39,7 +39,7 @@ self.onmessage = async (event) => {
           self.postMessage({ type: 'status', message: status });
         });
 
-        self.postMessage({ type: 'initDone', id, success: true });
+        self.postMessage({ type: 'initDone', id, success: true, enableGpu: engine.enableGpu });
         break;
       }
 
