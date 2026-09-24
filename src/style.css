@@ -377,6 +377,13 @@ body {
   border: 1px solid transparent;
 }
 
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .btn-sm {
   padding: 0.35rem 0.6rem;
   font-size: 0.75rem;

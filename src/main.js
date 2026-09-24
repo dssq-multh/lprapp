@@ -1201,12 +1201,14 @@ async function initApp() {
     }
     engineStatusBadge.className = 'status-badge ready';
     engineStatusText.textContent = `Models Ready (${isGpuEnabled ? 'WebGPU' : 'WASM'})`;
+    btnRecognize.disabled = false;
 
     hideLoadingOverlay();
   } catch (err) {
     console.error('Failed to initialize engine:', err);
     engineStatusBadge.className = 'status-badge ready';
     engineStatusText.textContent = 'Wasm Ready (On-Demand)';
+    btnRecognize.disabled = false;
     showLoadingError(err.message || String(err));
   }
 }
