@@ -39,6 +39,11 @@ export const isIOS = typeof navigator !== 'undefined' && (
   /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 );
+console.log(`[Device] isIOS: ${isIOS}`, {
+  userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+  platform: typeof navigator !== 'undefined' ? navigator.platform : null,
+  maxTouchPoints: typeof navigator !== 'undefined' ? navigator.maxTouchPoints : null
+});
 let mockIsIOS = null;
 export function checkIsIOS() {
   if (mockIsIOS !== null) return mockIsIOS;
@@ -503,6 +508,7 @@ async function processCurrentFrame() {
     // Only for iOS, enforce a minimum sleep of 2s between detections to keep device cool and prevent WebKit watchdog kills
     if (checkIsIOS()) {
       sleepMs = Math.max(sleepMs, 2000);
+      console.log(`[iOS Throttle] Sleeping ${sleepMs}ms between detections (latency: ${latency}ms, idle: ${isIdle})`);
     }
 
     nextAllowedFrameTime = now + sleepMs;
