@@ -221,6 +221,56 @@
               </span>
               <span id="btnTapToDetectText" class="shutter-text">Tap to Detect</span>
             </button>
+
+            <!-- Static Image Simulation Controls (Zoom & Pan) -->
+            <div id="staticZoomControls" class="static-zoom-controls" style="display:none;" role="toolbar" aria-label="Static Image Zoom and Pan Controls">
+              <div class="zoom-btn-group">
+                <button id="btnStaticPanLeft" class="zoom-ctrl-btn" title="Move Left (Pan Left) [←]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                  <span>Left</span>
+                </button>
+                <button id="btnStaticPanCenter" class="zoom-ctrl-btn zoom-btn-icon" title="Reset Pan to Center [0]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 3v3m0 12v3M3 12h3m12 0h3"></path>
+                  </svg>
+                </button>
+                <button id="btnStaticPanRight" class="zoom-ctrl-btn" title="Move Right (Pan Right) [→]">
+                  <span>Right</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="zoom-divider"></div>
+
+              <div class="zoom-btn-group">
+                <button id="btnStaticZoomOut" class="zoom-ctrl-btn zoom-btn-icon" title="Zoom Out [-]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </button>
+                <span id="staticZoomLevelText" class="zoom-level-text" title="Current Zoom Factor">1.0×</span>
+                <button id="btnStaticZoomIn" class="zoom-ctrl-btn zoom-btn-icon" title="Zoom In [+]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="zoom-divider"></div>
+
+              <div class="zoom-presets">
+                <button class="zoom-preset-btn active" data-zoom="1.0" title="1× (Full View)">1×</button>
+                <button class="zoom-preset-btn" data-zoom="1.5" title="1.5× Zoom">1.5×</button>
+                <button class="zoom-preset-btn" data-zoom="2.0" title="2× Zoom">2×</button>
+                <button class="zoom-preset-btn" data-zoom="3.0" title="3× Zoom">3×</button>
+              </div>
+            </div>
           </div>
         </section>
       </main>

@@ -37,6 +37,20 @@ const rightPanel = document.querySelector('.right-panel');
 const gpuToggle = document.getElementById('gpuToggle');
 const gpuToggleToolbar = document.getElementById('gpuToggleToolbar');
 
+// Static Image Simulation Zoom & Pan Elements
+const staticZoomControls = document.getElementById('staticZoomControls');
+const btnStaticPanLeft = document.getElementById('btnStaticPanLeft');
+const btnStaticPanCenter = document.getElementById('btnStaticPanCenter');
+const btnStaticPanRight = document.getElementById('btnStaticPanRight');
+const btnStaticZoomOut = document.getElementById('btnStaticZoomOut');
+const btnStaticZoomIn = document.getElementById('btnStaticZoomIn');
+const staticZoomLevelText = document.getElementById('staticZoomLevelText');
+const staticZoomPresets = document.querySelectorAll('.zoom-preset-btn');
+
+let currentStaticSourceImg = null;
+let staticZoom = 1.0;
+let staticPanRatio = 0.0;
+
 // Global Loading Overlay Elements (YOLO + PaddleOCR)
 const appLoadingOverlay = document.getElementById('appLoadingOverlay');
 const compItemYolo = document.getElementById('compItemYolo');
@@ -96,6 +110,10 @@ if (typeof window !== 'undefined') {
   };
   window.__getGpuEnabled = () => isGpuEnabled;
   window.__setGpuEnabled = (v) => onGpuToggleChange(v);
+  window.__getStaticZoom = () => staticZoom;
+  window.__setStaticZoom = (z) => setStaticZoom(z);
+  window.__getStaticPan = () => staticPanRatio;
+  window.__setStaticPan = (p) => setStaticPan(p);
   window.__isIOS = isIOS;
   window.__checkIsIOS = checkIsIOS;
   window.__setIsIOS = (v) => { mockIsIOS = v; };
@@ -296,6 +314,11 @@ function hideZoomBadge() {
  */
 async function startCamera() {
   if (isStreaming) return;
+
+  if (staticZoomControls) {
+    staticZoomControls.style.display = 'none';
+  }
+  currentStaticSourceImg = null;
 
   try {
     engineStatusBadge.className = 'status-badge active';
@@ -818,8 +841,111 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 /**
+ * Updates UI buttons and indicators for static zoom and pan.
+ */
+function updateStaticZoomUi() {
+  if (staticZoomLevelText) {
+    staticZoomLevelText.textContent = `${staticZoom.toFixed(1)}×`;
+  }
+  if (btnStaticZoomOut) {
+    btnStaticZoomOut.disabled = staticZoom <= 1.0;
+  }
+  if (btnStaticZoomIn) {
+    btnStaticZoomIn.disabled = staticZoom >= 4.0;
+  }
+  if (btnStaticPanLeft) {
+    btnStaticPanLeft.disabled = staticZoom <= 1.0 || staticPanRatio <= -0.98;
+  }
+  if (btnStaticPanRight) {
+    btnStaticPanRight.disabled = staticZoom <= 1.0 || staticPanRatio >= 0.98;
+  }
+  if (btnStaticPanCenter) {
+    btnStaticPanCenter.disabled = staticZoom <= 1.0 || Math.abs(staticPanRatio) < 0.02;
+  }
+  staticZoomPresets.forEach((btn) => {
+    const z = parseFloat(btn.dataset.zoom);
+    btn.classList.toggle('active', Math.abs(z - staticZoom) < 0.05);
+  });
+}
+
+/**
+ * Renders the static image at the specified zoom level and pan position,
+ * fitting the cropped window into a max 1080px canvas (simulating optical/sensor zoom).
+ */
+function renderStaticZoomedFrame() {
+  if (!currentStaticSourceImg) return;
+  const origW = currentStaticSourceImg.naturalWidth || currentStaticSourceImg.width;
+  const origH = currentStaticSourceImg.naturalHeight || currentStaticSourceImg.height;
+  if (!origW || !origH) return;
+
+  // Window size in source coordinates at current zoom level
+  const cropW = origW / staticZoom;
+  const cropH = origH / staticZoom;
+
+  // Maximum pan travel in source pixels
+  const maxPanX = (origW - cropW) / 2;
+  const panPxX = staticPanRatio * maxPanX;
+
+  // Source crop rectangle
+  const sx = Math.max(0, Math.min(origW - cropW, (origW - cropW) / 2 + panPxX));
+  const sy = Math.max(0, (origH - cropH) / 2);
+
+  // Target canvas dimensions (max 1080px)
+  const maxDim = 1080;
+  let targetW = Math.round(cropW);
+  let targetH = Math.round(cropH);
+  if (targetW > maxDim || targetH > maxDim) {
+    if (targetW >= targetH) {
+      targetH = Math.round((targetH * maxDim) / targetW);
+      targetW = maxDim;
+    } else {
+      targetW = Math.round((targetW * maxDim) / targetH);
+      targetH = maxDim;
+    }
+  }
+
+  const c = document.createElement('canvas');
+  c.width = targetW;
+  c.height = targetH;
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(currentStaticSourceImg, sx, sy, cropW, cropH, 0, 0, targetW, targetH);
+
+  updateStaticZoomUi();
+
+  engineStatusBadge.className = 'status-badge active';
+  engineStatusText.textContent = `Analyzing ${staticZoom > 1.0 ? staticZoom.toFixed(1) + '×' : '1080px'} Frame...`;
+
+  staticImageElement.onload = async () => {
+    await processCurrentFrame();
+    engineStatusBadge.className = 'status-badge ready';
+    engineStatusText.textContent = `Image Analyzed (${staticZoom.toFixed(1)}× Zoom)`;
+  };
+  staticImageElement.src = c.toDataURL('image/jpeg', 0.95);
+}
+
+function setStaticZoom(newZoom) {
+  const clamped = Math.max(1.0, Math.min(4.0, Math.round(newZoom * 10) / 10));
+  if (clamped === staticZoom) return;
+  staticZoom = clamped;
+  if (staticZoom <= 1.0) {
+    staticPanRatio = 0.0;
+  }
+  renderStaticZoomedFrame();
+}
+
+function setStaticPan(newPanRatio) {
+  if (staticZoom <= 1.0) return;
+  const clamped = Math.max(-1.0, Math.min(1.0, Math.round(newPanRatio * 100) / 100));
+  if (clamped === staticPanRatio) return;
+  staticPanRatio = clamped;
+  renderStaticZoomedFrame();
+}
+
+/**
  * Loads a static test image (e.g. Car 1, Car 2, or uploaded photo)
- * and renders the downscaled 1080px content so visual display matches what AI sees.
+ * and renders the downscaled 1080px content with zoom/pan simulation.
  */
 async function loadStaticImage(url) {
   if (isStreaming) {
@@ -836,24 +962,20 @@ async function loadStaticImage(url) {
   videoElement.style.display = 'none';
   staticImageElement.style.display = 'block';
 
+  // Reset zoom & pan to default on new image load
+  staticZoom = 1.0;
+  staticPanRatio = 0.0;
+  if (staticZoomControls) staticZoomControls.style.display = 'flex';
+  updateStaticZoomUi();
+
   engineStatusBadge.className = 'status-badge active';
-  engineStatusText.textContent = 'Downsampling to 1080px...';
+  engineStatusText.textContent = 'Loading Image...';
 
   const tempImg = new Image();
   tempImg.crossOrigin = 'anonymous';
-  tempImg.onload = async () => {
-    // Shrink full-resolution image to max 1080px
-    const fitted = fitFrameToMax1080(tempImg);
-    if (!fitted) return;
-
-    // Render the 1080px content visually so the user sees the exact resolution AI processes
-    staticImageElement.onload = async () => {
-      engineStatusText.textContent = 'Analyzing 1080px Frame...';
-      await processCurrentFrame();
-      engineStatusBadge.className = 'status-badge ready';
-      engineStatusText.textContent = 'Image Analyzed (1080px View)';
-    };
-    staticImageElement.src = fitted.canvas.toDataURL('image/jpeg', 0.95);
+  tempImg.onload = () => {
+    currentStaticSourceImg = tempImg;
+    renderStaticZoomedFrame();
   };
   if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('http://') || url.startsWith('https://')) {
     tempImg.src = url;
@@ -1032,6 +1154,66 @@ btnNextSample.addEventListener('click', () => {
   loadStaticImage(sampleSelect.value);
 });
 
+// Static Zoom and Pan Button Listeners
+btnStaticPanLeft?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setStaticPan(staticPanRatio - 0.25);
+});
+
+btnStaticPanRight?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setStaticPan(staticPanRatio + 0.25);
+});
+
+btnStaticPanCenter?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setStaticPan(0.0);
+});
+
+btnStaticZoomIn?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setStaticZoom(staticZoom + 0.5);
+});
+
+btnStaticZoomOut?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setStaticZoom(staticZoom - 0.5);
+});
+
+staticZoomPresets.forEach((btn) => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const z = parseFloat(btn.dataset.zoom);
+    if (!isNaN(z)) {
+      setStaticZoom(z);
+    }
+  });
+});
+
+// Keyboard shortcuts for static zoom and pan
+window.addEventListener('keydown', (e) => {
+  if (activeMode !== 'static') return;
+  if (e.target.closest('textarea, input, select')) return;
+
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    setStaticPan(staticPanRatio - 0.20);
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    setStaticPan(staticPanRatio + 0.20);
+  } else if (e.key === '+' || e.key === '=') {
+    e.preventDefault();
+    setStaticZoom(staticZoom + 0.5);
+  } else if (e.key === '-' || e.key === '_') {
+    e.preventDefault();
+    setStaticZoom(staticZoom - 0.5);
+  } else if (e.key === '0' || e.key === 'Home') {
+    e.preventDefault();
+    setStaticPan(0.0);
+    setStaticZoom(1.0);
+  }
+});
+
 fileInput.addEventListener('change', (e) => {
   const file = e.target.files && e.target.files[0];
   if (file) {
@@ -1051,6 +1233,8 @@ btnCloseOverlay?.addEventListener('click', () => {
     document.body.classList.remove('camera-active-mode', 'static-active-mode');
     if (rightPanel) rightPanel.classList.remove('mobile-active');
     staticImageElement.style.display = 'none';
+    if (staticZoomControls) staticZoomControls.style.display = 'none';
+    currentStaticSourceImg = null;
     idleOverlay.style.display = 'flex';
     clearOverlay();
     engineStatusBadge.className = 'status-badge ready';
