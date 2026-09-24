@@ -128,6 +128,22 @@ self.onmessage = async (event) => {
         break;
       }
 
+      case 'rawDetect': {
+        if (!engine) throw new Error('Engine not initialized');
+        const { bitmap, imageData, width, height, thresh } = payload || {};
+        const canvas = new OffscreenCanvas(width, height);
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (bitmap) {
+          ctx.drawImage(bitmap, 0, 0);
+          try { bitmap.close(); } catch (_) {}
+        } else if (imageData) {
+          ctx.putImageData(imageData, 0, 0);
+        }
+        const dets = await engine.detectIn(canvas, 0, 0, thresh || 0.05);
+        self.postMessage({ type: 'rawDetectDone', id, detections: dets });
+        break;
+      }
+
       default:
         console.warn('Unknown message type in LPR worker:', type);
     }

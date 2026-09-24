@@ -15,6 +15,8 @@ const IMAGES = testCases.map(tc => ({
   groundTruth: tc.allPlates
 }));
 
+const targetPlatesList = [...new Set(testCases.flatMap(tc => tc.allPlates))];
+
 const userDataDir = `/tmp/chrome_audit_${Date.now()}`;
 const chrome = spawn('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', [
   '--headless',
@@ -92,6 +94,17 @@ function sleep(ms) {
 
     if (!ready) throw new Error('Timeout waiting for LPR Engine & PaddleOCR');
     console.log('ALPR Engine & PaddleOCR are READY in browser!\n');
+
+    // Populate all ground truth target plates into platesTextarea
+    await sendCommand('Runtime.evaluate', {
+      expression: `(() => {
+        const ta = document.getElementById('platesTextarea');
+        if (ta) {
+          ta.value = ${JSON.stringify(targetPlatesList)}.join('\\n');
+          ta.dispatchEvent(new Event('input'));
+        }
+      })()`
+    });
 
     const results = [];
 

@@ -15,12 +15,7 @@ const IMAGES = testCases.map(tc => ({
   groundTruth: tc.allPlates
 }));
 
-const targetPlatesList = [
-  'CAL8942', 'B391KLT', 'SDN6618H', 'SMJ6650C', 'SBU999J',
-  'SML6579R', 'ES3960A', 'SLX9361E', 'SNF9945S', 'SKG516L',
-  'SJV7999M', 'SNF5763B', 'SMK8800G', 'SLE5647H', 'SNY9977A',
-  'SMU5178Z', 'SJS561D', 'SND33T'
-];
+const targetPlatesList = [...new Set(testCases.flatMap(tc => tc.allPlates))];
 
 const userDataDir = `/tmp/chrome_audit_paddle_${Date.now()}`;
 const chrome = spawn('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', [
@@ -103,9 +98,9 @@ function sleep(ms) {
     // Populate target plates in the page
     await sendCommand('Runtime.evaluate', {
       expression: `(() => {
-        const ta = document.getElementById('plates-input');
+        const ta = document.getElementById('platesTextarea');
         if (ta) {
-          ta.value = ${JSON.stringify(targetPlatesList.join('\\n'))};
+          ta.value = ${JSON.stringify(targetPlatesList)}.join('\\n');
           ta.dispatchEvent(new Event('input'));
         }
       })()`

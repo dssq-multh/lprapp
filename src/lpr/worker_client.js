@@ -205,6 +205,57 @@ export class LprWorkerClient {
     });
   }
 
+  async rawDetect(canvas, thresh = 0.05) {
+    const id = ++this.reqSeq;
+    const width = canvas.width;
+    const height = canvas.height;
+
+    return new Promise(async (resolve, reject) => {
+      this.pending.set(id, {
+        resolve: (data) => resolve(data.detections || []),
+        reject
+      });
+
+      try {
+        if (typeof createImageBitmap === 'function') {
+          const bitmap = await createImageBitmap(canvas);
+          this.worker.postMessage(
+            {
+              type: 'rawDetect',
+              id,
+              payload: {
+                bitmap,
+                width,
+                height,
+                thresh
+              }
+            },
+            [bitmap]
+          );
+        } else {
+          const ctx = canvas.getContext('2d');
+          const imageData = ctx.getImageData(0, 0, width, height);
+          this.worker.postMessage(
+            {
+              type: 'rawDetect',
+              id,
+              payload: {
+                imageData,
+                width,
+                height,
+                thresh
+              }
+            },
+            [imageData.data.buffer]
+          );
+        }
+      } catch (err) {
+        this.pending.delete(id);
+        reject(err);
+      }
+    });
+  }
+
   terminate() {
     if (this.worker) {
       this.worker.terminate();

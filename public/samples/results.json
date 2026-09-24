@@ -5,7 +5,7 @@
     "groundTruth": [
       "CAL8942"
     ],
-    "durationMs": 70,
+    "durationMs": 68,
     "detections": [
       {
         "text": "CAL8942",
@@ -53,7 +53,7 @@
       "SMJ6650C",
       "SBU999J"
     ],
-    "durationMs": 62,
+    "durationMs": 61,
     "detections": [
       {
         "text": "SBU999J",
@@ -90,7 +90,7 @@
       "SMJ6650C",
       "ES3960A"
     ],
-    "durationMs": 40,
+    "durationMs": 39,
     "detections": [
       {
         "text": "SMJ665OC",
@@ -116,7 +116,7 @@
       "SNF9945S",
       "SLX9361E"
     ],
-    "durationMs": 55,
+    "durationMs": 53,
     "detections": [
       {
         "text": "SML6579R",
@@ -179,7 +179,7 @@
       "SNF9945S",
       "SKG516L"
     ],
-    "durationMs": 54,
+    "durationMs": 53,
     "detections": [
       {
         "text": "SNF9945S",
@@ -240,7 +240,7 @@
     "groundTruth": [
       "SLE5647H"
     ],
-    "durationMs": 36,
+    "durationMs": 38,
     "detections": [
       {
         "text": "SLE5647H",
@@ -265,7 +265,7 @@
       "SNY9977A",
       "SMU5178Z"
     ],
-    "durationMs": 76,
+    "durationMs": 84,
     "detections": [
       {
         "text": "SJS561D",
@@ -315,7 +315,7 @@
       "SJS561D",
       "SND33T"
     ],
-    "durationMs": 33,
+    "durationMs": 36,
     "detections": [
       {
         "text": "SJS561D",
@@ -338,7 +338,7 @@
     "groundTruth": [
       "SND33T"
     ],
-    "durationMs": 45,
+    "durationMs": 43,
     "detections": [
       {
         "text": "SND33T",
@@ -352,6 +352,194 @@
         },
         "isMatch": true,
         "matchedPlate": "SND33T"
+      }
+    ]
+  },
+  {
+    "name": "Photo 11 (IMG20260924212054.jpg)",
+    "path": "/samples/photos/IMG20260924212054.jpg",
+    "groundTruth": [
+      "SLK5331L",
+      "SMK8837M",
+      "SMZ7912G",
+      "SNX6148B"
+    ],
+    "durationMs": 59,
+    "detections": [
+      {
+        "text": "SMZ7912G",
+        "score": 0.29,
+        "minConf": 0.62,
+        "box": {
+          "left": 1033.141912832089,
+          "top": 260.7364353173216,
+          "width": 36.83699907630535,
+          "height": 10.337466716275515
+        },
+        "isMatch": true,
+        "matchedPlate": "SMZ7912G"
+      },
+      {
+        "text": "SMK8837M",
+        "score": 0.23,
+        "minConf": 0.63,
+        "box": {
+          "left": 773.6264313550116,
+          "top": 299.47948637668975,
+          "width": 41.592917277458696,
+          "height": 12.0627425116744
+        },
+        "isMatch": true,
+        "matchedPlate": "SMK8837M"
+      }
+    ]
+  },
+  {
+    "name": "Photo 12 (IMG20260924212103.jpg)",
+    "path": "/samples/photos/IMG20260924212103.jpg",
+    "groundTruth": [
+      "SLC6318L",
+      "SMZ6023D",
+      "SNA4496E"
+    ],
+    "durationMs": 50,
+    "detections": [
+      {
+        "text": "65TEL",
+        "score": 0.52,
+        "minConf": 0.6,
+        "box": {
+          "left": 529.9381166777566,
+          "top": 322.49630357774146,
+          "width": 28.468637587776357,
+          "height": 18.976683444890284
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      },
+      {
+        "text": "SMZ6023D",
+        "score": 0.25,
+        "minConf": 0.69,
+        "box": {
+          "left": 890.3610796787627,
+          "top": 307.5128483274297,
+          "width": 43.89119439006254,
+          "height": 14.870803501616535
+        },
+        "isMatch": true,
+        "matchedPlate": "SMZ6023D"
+      }
+    ]
+  },
+  {
+    "name": "Photo 13 (IMG20260924212121.jpg)",
+    "path": "/samples/photos/IMG20260924212121.jpg",
+    "groundTruth": [
+      "SNC5016R",
+      "SMK4973D"
+    ],
+    "durationMs": 46,
+    "detections": [
+      {
+        "text": "SNX155",
+        "score": 0.61,
+        "minConf": 0.83,
+        "box": {
+          "left": 989.6698135452582,
+          "top": 392.26046503263046,
+          "width": 81.61032817115415,
+          "height": 23.633661440083188
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      },
+      {
+        "text": "SONGR",
+        "score": 0.29,
+        "minConf": 0.6,
+        "box": {
+          "left": 451.0895993288733,
+          "top": 314.3461179832477,
+          "width": 86.19990777216037,
+          "height": 68.48712781609379
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      }
+    ]
+  },
+  {
+    "name": "Photo 14 (IMG20260924212156.jpg)",
+    "path": "/samples/photos/IMG20260924212156.jpg",
+    "groundTruth": [
+      "SBR8808R",
+      "SND33T"
+    ],
+    "durationMs": 62,
+    "detections": [
+      {
+        "text": "SBR8808R",
+        "score": 0.71,
+        "minConf": 0.88,
+        "box": {
+          "left": 729.5255551200132,
+          "top": 361.8933387497616,
+          "width": 70.54754174682921,
+          "height": 40.29639779460467
+        },
+        "isMatch": true,
+        "matchedPlate": "SBR8808R"
+      },
+      {
+        "text": "SND33T",
+        "score": 0.67,
+        "minConf": 0.85,
+        "box": {
+          "left": 158.29612323906906,
+          "top": 325.89552664552633,
+          "width": 71.27151482308591,
+          "height": 23.197995559025173
+        },
+        "isMatch": true,
+        "matchedPlate": "SND33T"
+      }
+    ]
+  },
+  {
+    "name": "Photo 15 (IMG20260924212159.jpg)",
+    "path": "/samples/photos/IMG20260924212159.jpg",
+    "groundTruth": [
+      "SBR8808R",
+      "SNN5085H"
+    ],
+    "durationMs": 57,
+    "detections": [
+      {
+        "text": "SNN5085H",
+        "score": 0.79,
+        "minConf": 0.9,
+        "box": {
+          "left": 691.9161607944664,
+          "top": 341.5787476851777,
+          "width": 90.44676477163193,
+          "height": 29.042665108960932
+        },
+        "isMatch": true,
+        "matchedPlate": "SNN5085H"
+      },
+      {
+        "text": "SBR8808R",
+        "score": 0.75,
+        "minConf": 0.88,
+        "box": {
+          "left": 204.22165617760686,
+          "top": 385.6464195069301,
+          "width": 80.26353534916018,
+          "height": 52.4522718922272
+        },
+        "isMatch": true,
+        "matchedPlate": "SBR8808R"
       }
     ]
   }
