@@ -1,0 +1,636 @@
+[
+  {
+    "name": "Car 1 (car_cal8942.jpg)",
+    "path": "/samples/car_cal8942.jpg",
+    "groundTruth": [
+      "CAL8942"
+    ],
+    "yoloDurMs": 81,
+    "detections": [
+      {
+        "text": "CAL8942",
+        "yoloScore": 0.78,
+        "ocrScore": 1,
+        "box": {
+          "left": 645.2406892776489,
+          "top": 268.5139489173889,
+          "width": 245.8040370941162,
+          "height": 83.26638579368591
+        },
+        "isMatch": true,
+        "matchedPlate": "CAL8942"
+      }
+    ],
+    "matchedPlates": [
+      "CAL8942"
+    ]
+  },
+  {
+    "name": "Car 2 (car_b391klt.jpg)",
+    "path": "/samples/car_b391klt.jpg",
+    "groundTruth": [
+      "B391KLT"
+    ],
+    "yoloDurMs": 69,
+    "detections": [
+      {
+        "text": "B39IKLT",
+        "yoloScore": 0.72,
+        "ocrScore": 0.99,
+        "box": {
+          "left": 471.1348285675049,
+          "top": 431.29271614551544,
+          "width": 138.26427841186523,
+          "height": 46.57221579551697
+        },
+        "isMatch": true,
+        "matchedPlate": "B391KLT"
+      }
+    ],
+    "matchedPlates": [
+      "B391KLT"
+    ]
+  },
+  {
+    "name": "Photo 1 (IMG20260923200603.jpg)",
+    "path": "/samples/photos/IMG20260923200603.jpg",
+    "groundTruth": [
+      "SDN6618H",
+      "SMJ6650C",
+      "SBU999J"
+    ],
+    "yoloDurMs": 48,
+    "detections": [
+      {
+        "text": "668H",
+        "yoloScore": 0.67,
+        "ocrScore": 0.95,
+        "box": {
+          "left": 250.22946310043335,
+          "top": 349.316743850708,
+          "width": 42.92482852935791,
+          "height": 29.99217859903971
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      },
+      {
+        "text": "SBU999J",
+        "yoloScore": 0.3,
+        "ocrScore": 0.92,
+        "box": {
+          "left": 761.7769117355347,
+          "top": 344.00136947631836,
+          "width": 59.41964149475098,
+          "height": 31.753448486328125
+        },
+        "isMatch": true,
+        "matchedPlate": "SBU999J"
+      },
+      {
+        "text": "SWJ6850G",
+        "yoloScore": 0.25,
+        "ocrScore": 0.81,
+        "box": {
+          "left": 596.5786285400391,
+          "top": 259.3080755869547,
+          "width": 39.524105072021484,
+          "height": 25.315479278564453
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      }
+    ],
+    "matchedPlates": [
+      "SBU999J"
+    ]
+  },
+  {
+    "name": "Photo 2 (IMG20260923200608.jpg)",
+    "path": "/samples/photos/IMG20260923200608.jpg",
+    "groundTruth": [
+      "SMJ6650C",
+      "ES3960A"
+    ],
+    "yoloDurMs": 56,
+    "detections": [
+      {
+        "text": "SMJ6650C",
+        "yoloScore": 0.6,
+        "ocrScore": 0.94,
+        "box": {
+          "left": 513.928825378418,
+          "top": 239.71455510457355,
+          "width": 81.61674499511719,
+          "height": 28.25666300455729
+        },
+        "isMatch": true,
+        "matchedPlate": "SMJ6650C"
+      },
+      {
+        "text": "",
+        "yoloScore": 0.45,
+        "ocrScore": 0,
+        "box": {
+          "left": 859.0533971786499,
+          "top": 138.56795851389566,
+          "width": 73.08505439758301,
+          "height": 52.52028719584147
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      }
+    ],
+    "matchedPlates": [
+      "SMJ6650C"
+    ]
+  },
+  {
+    "name": "Photo 3 (IMG20260923200610.jpg)",
+    "path": "/samples/photos/IMG20260923200610.jpg",
+    "groundTruth": [
+      "SML6579R",
+      "ES3960A",
+      "SNF9945S",
+      "SLX9361E"
+    ],
+    "yoloDurMs": 54,
+    "detections": [
+      {
+        "text": "SML6579R",
+        "yoloScore": 0.7,
+        "ocrScore": 1,
+        "box": {
+          "left": 562.6773262023926,
+          "top": 327.90156618754065,
+          "width": 112.98988723754883,
+          "height": 42.73050308227539
+        },
+        "isMatch": true,
+        "matchedPlate": "SML6579R"
+      },
+      {
+        "text": "",
+        "yoloScore": 0.28,
+        "ocrScore": 0,
+        "box": {
+          "left": 226.26131629943848,
+          "top": 112.27409394582112,
+          "width": 47.761430740356445,
+          "height": 44.02443885803223
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      }
+    ],
+    "matchedPlates": [
+      "SML6579R"
+    ]
+  },
+  {
+    "name": "Photo 4 (IMG20260923200618.jpg)",
+    "path": "/samples/photos/IMG20260923200618.jpg",
+    "groundTruth": [
+      "ES3960A",
+      "SNF9945S",
+      "SKG516L",
+      "SLX9361E"
+    ],
+    "yoloDurMs": 63,
+    "detections": [
+      {
+        "text": "ES396OA",
+        "yoloScore": 0.72,
+        "ocrScore": 0.97,
+        "box": {
+          "left": 330.9355616569519,
+          "top": 309.823055267334,
+          "width": 71.88413715362549,
+          "height": 27.557769775390625
+        },
+        "isMatch": true,
+        "matchedPlate": "ES3960A"
+      },
+      {
+        "text": "SNF9945S",
+        "yoloScore": 0.44,
+        "ocrScore": 0.99,
+        "box": {
+          "left": 653.4765729904175,
+          "top": 274.95549964904785,
+          "width": 58.756547927856445,
+          "height": 29.529857635498047
+        },
+        "isMatch": true,
+        "matchedPlate": "SNF9945S"
+      },
+      {
+        "text": "SKG56L",
+        "yoloScore": 0.4,
+        "ocrScore": 0.99,
+        "box": {
+          "left": 907.7115440368652,
+          "top": 275.20352363586426,
+          "width": 41.63008117675781,
+          "height": 24.736080169677734
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      }
+    ],
+    "matchedPlates": [
+      "ES3960A",
+      "SNF9945S"
+    ]
+  },
+  {
+    "name": "Photo 5 (IMG20260923200621.jpg)",
+    "path": "/samples/photos/IMG20260923200621.jpg",
+    "groundTruth": [
+      "SNF9945S",
+      "SKG516L"
+    ],
+    "yoloDurMs": 59,
+    "detections": [
+      {
+        "text": "SNF9945S",
+        "yoloScore": 0.68,
+        "ocrScore": 1,
+        "box": {
+          "left": 273.20801639556885,
+          "top": 305.36146227518714,
+          "width": 107.29050636291504,
+          "height": 41.167415618896484
+        },
+        "isMatch": true,
+        "matchedPlate": "SNF9945S"
+      },
+      {
+        "text": "SKG5I6L",
+        "yoloScore": 0.66,
+        "ocrScore": 0.93,
+        "box": {
+          "left": 712.6916885375977,
+          "top": 284.3772703806559,
+          "width": 54.43547058105469,
+          "height": 29.22457504272461
+        },
+        "isMatch": true,
+        "matchedPlate": "SKG516L"
+      }
+    ],
+    "matchedPlates": [
+      "SNF9945S",
+      "SKG516L"
+    ]
+  },
+  {
+    "name": "Photo 6 (IMG20260923200627.jpg)",
+    "path": "/samples/photos/IMG20260923200627.jpg",
+    "groundTruth": [
+      "SJV7999M",
+      "SNF5763B",
+      "SMK8800G"
+    ],
+    "yoloDurMs": 59,
+    "detections": [
+      {
+        "text": "SJV7999M",
+        "yoloScore": 0.6,
+        "ocrScore": 0.6,
+        "box": {
+          "left": 415.2831001281738,
+          "top": 323.719030380249,
+          "width": 81.72798156738281,
+          "height": 45.565697987874344
+        },
+        "isMatch": true,
+        "matchedPlate": "SJV7999M"
+      }
+    ],
+    "matchedPlates": [
+      "SJV7999M"
+    ]
+  },
+  {
+    "name": "Photo 7 (IMG20260923200629.jpg)",
+    "path": "/samples/photos/IMG20260923200629.jpg",
+    "groundTruth": [
+      "SLE5647H"
+    ],
+    "yoloDurMs": 60,
+    "detections": [
+      {
+        "text": "SLE5647H",
+        "yoloScore": 0.74,
+        "ocrScore": 1,
+        "box": {
+          "left": 336.9698238372803,
+          "top": 364.23381868998206,
+          "width": 156.33831596374512,
+          "height": 57.05423863728841
+        },
+        "isMatch": true,
+        "matchedPlate": "SLE5647H"
+      }
+    ],
+    "matchedPlates": [
+      "SLE5647H"
+    ]
+  },
+  {
+    "name": "Photo 8 (IMG20260923200637.jpg)",
+    "path": "/samples/photos/IMG20260923200637.jpg",
+    "groundTruth": [
+      "SJS561D",
+      "SNY9977A",
+      "SMU5178Z"
+    ],
+    "yoloDurMs": 50,
+    "detections": [
+      {
+        "text": "SNY9977A",
+        "yoloScore": 0.69,
+        "ocrScore": 0.99,
+        "box": {
+          "left": 357.6230821609497,
+          "top": 299.07544581095374,
+          "width": 71.24017524719238,
+          "height": 32.09352111816406
+        },
+        "isMatch": true,
+        "matchedPlate": "SNY9977A"
+      },
+      {
+        "text": "SMU5178Z",
+        "yoloScore": 0.67,
+        "ocrScore": 0.98,
+        "box": {
+          "left": 696.7872276306152,
+          "top": 330.08192316691077,
+          "width": 76.56588363647461,
+          "height": 34.108154296875
+        },
+        "isMatch": true,
+        "matchedPlate": "SMU5178Z"
+      }
+    ],
+    "matchedPlates": [
+      "SNY9977A",
+      "SMU5178Z"
+    ]
+  },
+  {
+    "name": "Photo 9 (IMG20260923200640.jpg)",
+    "path": "/samples/photos/IMG20260923200640.jpg",
+    "groundTruth": [
+      "SJS561D",
+      "SND33T"
+    ],
+    "yoloDurMs": 49,
+    "detections": [
+      {
+        "text": "SJS561D",
+        "yoloScore": 0.66,
+        "ocrScore": 0.99,
+        "box": {
+          "left": 528.2638721466064,
+          "top": 322.26541074117023,
+          "width": 107.93397903442383,
+          "height": 51.46681340535481
+        },
+        "isMatch": true,
+        "matchedPlate": "SJS561D"
+      }
+    ],
+    "matchedPlates": [
+      "SJS561D"
+    ]
+  },
+  {
+    "name": "Photo 10 (IMG20260923200643.jpg)",
+    "path": "/samples/photos/IMG20260923200643.jpg",
+    "groundTruth": [
+      "SND33T"
+    ],
+    "yoloDurMs": 52,
+    "detections": [
+      {
+        "text": "SND33T",
+        "yoloScore": 0.64,
+        "ocrScore": 0.87,
+        "box": {
+          "left": 427.33844089508057,
+          "top": 374.86784108479816,
+          "width": 124.60478782653809,
+          "height": 68.47974650065103
+        },
+        "isMatch": true,
+        "matchedPlate": "SND33T"
+      }
+    ],
+    "matchedPlates": [
+      "SND33T"
+    ]
+  },
+  {
+    "name": "Photo 11 (IMG20260924212054.jpg)",
+    "path": "/samples/photos/IMG20260924212054.jpg",
+    "groundTruth": [
+      "SLK5331L",
+      "SMK8837M",
+      "SMZ7912G",
+      "SNX6148B"
+    ],
+    "yoloDurMs": 49,
+    "detections": [
+      {
+        "text": "SMK8837M",
+        "yoloScore": 0.64,
+        "ocrScore": 0.93,
+        "box": {
+          "left": 759.5859889984131,
+          "top": 291.14980379740393,
+          "width": 61.15086364746094,
+          "height": 27.884820302327473
+        },
+        "isMatch": true,
+        "matchedPlate": "SMK8837M"
+      },
+      {
+        "text": "5KL",
+        "yoloScore": 0.62,
+        "ocrScore": 0.8,
+        "box": {
+          "left": 465.75445461273193,
+          "top": 274.49037615458167,
+          "width": 39.16325569152832,
+          "height": 45.4322878519694
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      },
+      {
+        "text": "SMZ79120",
+        "yoloScore": 0.52,
+        "ocrScore": 0.86,
+        "box": {
+          "left": 1030.6488132476807,
+          "top": 248.5186818440755,
+          "width": 49.351186752319336,
+          "height": 31.102874755859375
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      }
+    ],
+    "matchedPlates": [
+      "SMK8837M"
+    ]
+  },
+  {
+    "name": "Photo 12 (IMG20260924212103.jpg)",
+    "path": "/samples/photos/IMG20260924212103.jpg",
+    "groundTruth": [
+      "SLC6318L",
+      "SMZ6023D",
+      "SNA4496E"
+    ],
+    "yoloDurMs": 50,
+    "detections": [
+      {
+        "text": "SL6318L",
+        "yoloScore": 0.67,
+        "ocrScore": 0.99,
+        "box": {
+          "left": 523.3047552108765,
+          "top": 317.3284505208333,
+          "width": 39.14080238342285,
+          "height": 30.954678853352863
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      }
+    ],
+    "matchedPlates": []
+  },
+  {
+    "name": "Photo 13 (IMG20260924212121.jpg)",
+    "path": "/samples/photos/IMG20260924212121.jpg",
+    "groundTruth": [
+      "SNC5016R",
+      "SMK4973D"
+    ],
+    "yoloDurMs": 43,
+    "detections": [
+      {
+        "text": "SNX155",
+        "yoloScore": 0.66,
+        "ocrScore": 0.94,
+        "box": {
+          "left": 984.7291202545166,
+          "top": 389.7642472585042,
+          "width": 94.12601852416992,
+          "height": 36.29453913370768
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      },
+      {
+        "text": "SK4973D",
+        "yoloScore": 0.22,
+        "ocrScore": 0.86,
+        "box": {
+          "left": 9.816357135772705,
+          "top": 303.07460912068683,
+          "width": 49.2216682434082,
+          "height": 29.233006795247395
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      }
+    ],
+    "matchedPlates": []
+  },
+  {
+    "name": "Photo 14 (IMG20260924212156.jpg)",
+    "path": "/samples/photos/IMG20260924212156.jpg",
+    "groundTruth": [
+      "SBR8808R",
+      "SND33T"
+    ],
+    "yoloDurMs": 44,
+    "detections": [
+      {
+        "text": "SBR8808R",
+        "yoloScore": 0.68,
+        "ocrScore": 0.95,
+        "box": {
+          "left": 722.3167419433594,
+          "top": 353.53919156392413,
+          "width": 80.5960464477539,
+          "height": 53.06241989135742
+        },
+        "isMatch": true,
+        "matchedPlate": "SBR8808R"
+      },
+      {
+        "text": "SND3T",
+        "yoloScore": 0.59,
+        "ocrScore": 0.95,
+        "box": {
+          "left": 152.01555848121643,
+          "top": 321.94459342956543,
+          "width": 67.26765203475952,
+          "height": 35.57341893513997
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      }
+    ],
+    "matchedPlates": [
+      "SBR8808R"
+    ]
+  },
+  {
+    "name": "Photo 15 (IMG20260924212159.jpg)",
+    "path": "/samples/photos/IMG20260924212159.jpg",
+    "groundTruth": [
+      "SBR8808R",
+      "SNN5085H"
+    ],
+    "yoloDurMs": 41,
+    "detections": [
+      {
+        "text": "SNN5085H",
+        "yoloScore": 0.72,
+        "ocrScore": 0.99,
+        "box": {
+          "left": 687.8242378234863,
+          "top": 333.4612922668457,
+          "width": 101.07892227172852,
+          "height": 47.152244567871094
+        },
+        "isMatch": true,
+        "matchedPlate": "SNN5085H"
+      },
+      {
+        "text": "SBR8808R",
+        "yoloScore": 0.69,
+        "ocrScore": 0.96,
+        "box": {
+          "left": 203.1757299900055,
+          "top": 378.26412200927734,
+          "width": 91.33311796188354,
+          "height": 62.60042317708333
+        },
+        "isMatch": true,
+        "matchedPlate": "SBR8808R"
+      }
+    ],
+    "matchedPlates": [
+      "SNN5085H",
+      "SBR8808R"
+    ]
+  }
+]

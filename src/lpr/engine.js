@@ -1,16 +1,16 @@
 import * as ort from 'onnxruntime-web';
 import { PaddleOCR } from '@paddleocr/paddleocr-js';
 import { letterbox, unletterboxQuad } from './preprocess.js';
-import { decodeSpotter } from './decoder_spotter.js';
+import { decodeYolov8 } from './decoder_yolov8.js';
 
 // Explicitly limit ONNX Runtime WebAssembly execution to strictly 1 CPU thread
 ort.env.wasm.numThreads = 1;
 
-const SPOT_W = 416, SPOT_H = 256;
+const SPOT_W = 640, SPOT_H = 384;
 const TILE_W = 384, TILE_H = 240, OVERLAP = 0.25;
 
-export const DEFAULT_DET_THRESH = 0.19;
-const NMS_IOU = 0.30;
+export const DEFAULT_DET_THRESH = 0.25;
+const NMS_IOU = 0.35;
 
 function boxOf(quad) {
   const xs = quad.map((p) => p[0]), ys = quad.map((p) => p[1]);
@@ -139,19 +139,17 @@ function preprocessPlateCrop(sourceCanvas, box, quad) {
     }
   }
   const isSquare = aspect < 2.0;
-  const padX = isSquare ? 4 : Math.max(12, Math.round(box.width * 0.22));
-  const padY = 4;
+  const padX = isSquare ? Math.max(4, Math.round(box.width * 0.08)) : Math.max(8, Math.round(box.width * 0.15));
+  const padY = Math.max(4, Math.round(box.height * 0.08));
   const sx = Math.max(0, box.left - padX);
   const sy = Math.max(0, box.top - padY);
   const sw = Math.min(sourceCanvas.width - sx, box.width + padX * 2);
   const sh = Math.min(sourceCanvas.height - sy, box.height + padY * 2);
 
-  // For 1-line rectangular plates, 48px height gives the single line ~40-48px.
-  // For 2-line stacked plates, each line needs at least 48px plus plate margins, requiring 128px.
-  const targetH = isSquare ? 128 : 48;
-  const targetW = isSquare
-    ? Math.max(128, Math.round(targetH * aspect))
-    : Math.max(180, Math.round(targetH * aspect * (sw / Math.max(1, box.width))));
+  // Scale crop reasonably (up to 2x, capped to max height ~72px to avoid blur)
+  const scaleFactor = Math.max(1, Math.min(2.0, 72 / Math.max(1, sh)));
+  const targetW = Math.round(sw * scaleFactor);
+  const targetH = Math.round(sh * scaleFactor);
 
   const c = typeof OffscreenCanvas !== 'undefined'
     ? new OffscreenCanvas(targetW, targetH)
@@ -160,6 +158,7 @@ function preprocessPlateCrop(sourceCanvas, box, quad) {
   c.height = targetH;
   const ctx = c.getContext('2d', { willReadFrequently: true });
   ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(sourceCanvas, sx, sy, sw, sh, 0, 0, targetW, targetH);
 
   return { canvas: c, sx, sy, sw, sh, targetW, targetH };
@@ -181,13 +180,13 @@ export class LprEngine {
   }
 
   async createSpotterSession(wantGpu) {
-    const spotterUrl = `${this.base}models/spotter_b_v12_yuv_pm.onnx`;
+    const spotterUrl = `${this.base}models/license_plate_detector_yolov8n_int8.onnx`;
 
     if (wantGpu) {
       // First try disabled, then basic optimization to avoid Conv fusion layout bugs on WebGPU
       for (const optLevel of ['disabled', 'basic', 'all']) {
         try {
-          console.log(`Validating YOLOv5n-OBB on WebGPU (graphOptimizationLevel: ${optLevel})...`);
+          console.log(`Validating YOLOv8n-INT8 on WebGPU (graphOptimizationLevel: ${optLevel})...`);
           const session = await ort.InferenceSession.create(spotterUrl, {
             executionProviders: ['webgpu', 'wasm'],
             graphOptimizationLevel: optLevel,
@@ -210,7 +209,7 @@ export class LprEngine {
       intraOpNumThreads: 1,
       interOpNumThreads: 1,
     });
-    console.log('YOLOv5n-OBB initialized on WASM (1 CPU)');
+    console.log('YOLOv8n-INT8 initialized on WASM (1 CPU)');
     return { session: wasmSession, enableGpu: false };
   }
 
@@ -304,7 +303,7 @@ export class LprEngine {
   }
 
   async detectIn(canvas, ox, oy, thresh) {
-    const p = letterbox(canvas, SPOT_W, SPOT_H, { norm: 'yuv' });
+    const p = letterbox(canvas, SPOT_W, SPOT_H, { norm: 'div255' });
     let out;
     try {
       out = await this.spotter.run({
@@ -312,7 +311,7 @@ export class LprEngine {
       });
     } catch (err) {
       if (this.enableGpu) {
-        console.warn('YOLO spotter run failed on WebGPU at runtime, falling back to WASM:', err);
+        console.warn('YOLOv8 spotter run failed on WebGPU at runtime, falling back to WASM:', err);
         const { session, enableGpu } = await this.createSpotterSession(false);
         this.spotter = session;
         this.enableGpu = enableGpu;
@@ -323,8 +322,8 @@ export class LprEngine {
         throw err;
       }
     }
-    const [p3, p4] = this.spotter.outputNames;
-    const rawDets = decodeSpotter(out, p3, p4, thresh, NMS_IOU);
+    const outTensor = out[this.spotter.outputNames[0]];
+    const rawDets = decodeYolov8(outTensor, thresh, NMS_IOU);
 
     return rawDets
       .map((d) => {
@@ -334,7 +333,7 @@ export class LprEngine {
         const aspect = box.width / Math.max(1, box.height);
         return { quad: q, box, score: d.score, aspect };
       })
-      .filter((d) => d.score >= thresh && d.aspect >= 1.2 && d.box.width >= 24 && d.box.height >= 10);
+      .filter((d) => d.score >= thresh && d.aspect >= 0.8 && d.box.width >= 20 && d.box.height >= 10);
   }
 
   async detect(image, opts = {}) {
@@ -430,7 +429,8 @@ export class LprEngine {
             rawQuad[2][0] = Math.max(rawQuad[2][0], maxX);
           }
 
-          const scaleCrop = crop.sw / crop.targetW;
+          const scaleCropX = crop.sw / crop.targetW;
+          const scaleCropY = crop.sh / crop.targetH;
           const cx = (rawQuad[0][0] + rawQuad[1][0] + rawQuad[2][0] + rawQuad[3][0]) / 4;
           const cy = (rawQuad[0][1] + rawQuad[1][1] + rawQuad[2][1] + rawQuad[3][1]) / 4;
           const expanded = rawQuad.map(([px, py]) => [
@@ -438,8 +438,8 @@ export class LprEngine {
             cy + (py - cy) * 1.25
           ]);
           refinedQuad = expanded.map(([px, py]) => [
-            crop.sx + px * scaleCrop,
-            crop.sy + py * scaleCrop
+            crop.sx + px * scaleCropX,
+            crop.sy + py * scaleCropY
           ]);
         }
       }
