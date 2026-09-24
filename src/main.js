@@ -1,4 +1,5 @@
-import { LprEngine, fitFrameToMax1080 } from './lpr/engine.js';
+import { LprWorkerClient as LprEngine } from './lpr/worker_client.js';
+import { fitFrameToMax1080 } from './lpr/engine.js';
 
 // DOM Elements
 const engineStatusBadge = document.getElementById('engineStatusBadge');
@@ -396,7 +397,7 @@ function stopCamera() {
 
 /**
  * Continuous frame recognition loop.
- * Runs non-blocking: processes one frame at a time without delaying video display.
+ * Runs non-blocking: offloaded to Web Worker without delaying video display.
  */
 function requestRecognitionLoop() {
   if (!isStreaming || activeMode !== 'camera') return;
@@ -409,7 +410,7 @@ function requestRecognitionLoop() {
 }
 
 /**
- * Fits picture to max 1080px in width or height, runs LPR Wasm, and draws bounding boxes.
+ * Fits picture to max 1080px in width or height, runs LPR Wasm in Web Worker, and draws bounding boxes.
  */
 async function processCurrentFrame() {
   if (isProcessingFrame) return;
@@ -429,7 +430,7 @@ async function processCurrentFrame() {
 
     scanResText.textContent = `${fitted.width}×${fitted.height} (max 1080px)`;
 
-    // Run OpenALPR Wasm inference
+    // Run OpenALPR Wasm inference via Web Worker
     const detections = await engine.readAll(fitted.canvas, { tile: true });
 
     const t1 = performance.now();

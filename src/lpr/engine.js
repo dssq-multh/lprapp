@@ -150,7 +150,9 @@ function preprocessPlateCrop(sourceCanvas, box, quad) {
     ? Math.max(128, Math.round(targetH * aspect))
     : Math.max(180, Math.round(targetH * aspect * (sw / Math.max(1, box.width))));
 
-  const c = document.createElement('canvas');
+  const c = typeof OffscreenCanvas !== 'undefined'
+    ? new OffscreenCanvas(targetW, targetH)
+    : document.createElement('canvas');
   c.width = targetW;
   c.height = targetH;
   const ctx = c.getContext('2d', { willReadFrequently: true });
@@ -216,7 +218,10 @@ export class LprEngine {
 
     if (onStatus) onStatus('Configuring WebAssembly runtime...');
     ort.env.wasm.wasmPaths = `${baseUrl}ort-wasm/`;
-    if (typeof window !== 'undefined' && !window.crossOriginIsolated) {
+    const isCrossOriginIsolated = typeof crossOriginIsolated !== 'undefined'
+      ? crossOriginIsolated
+      : (typeof self !== 'undefined' && Boolean(self.crossOriginIsolated));
+    if (!isCrossOriginIsolated) {
       ort.env.wasm.numThreads = 1;
     }
 
@@ -309,7 +314,11 @@ export class LprEngine {
 
     try {
       const crop = preprocessPlateCrop(image, box, quad);
-      const results = await this.paddleOcr.predict(crop.canvas);
+      const input = (typeof createImageBitmap === 'function') ? await createImageBitmap(crop.canvas) : crop.canvas;
+      const results = await this.paddleOcr.predict(input);
+      if (input && typeof input.close === 'function') {
+        try { input.close(); } catch (_) {}
+      }
       const res = results && results[0];
 
       let text = '';
@@ -459,7 +468,9 @@ export function fitFrameToMax1080(source) {
     }
   }
 
-  const canvas = document.createElement('canvas');
+  const canvas = typeof document !== 'undefined'
+    ? document.createElement('canvas')
+    : new OffscreenCanvas(targetW, targetH);
   canvas.width = targetW;
   canvas.height = targetH;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
