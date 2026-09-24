@@ -906,11 +906,24 @@ const SAMPLE_TARGET_PLATES = [
   'SNF9945S',
   'SKG516L',
   'SJV7999M',
+  'SNF5763B',
+  'SMK8800G',
   'SLE5647H',
   'SNY9977A',
   'SMU5178Z',
   'SJS561D',
-  'SND33T'
+  'SND33T',
+  'SLK5331L',
+  'SMK8837M',
+  'SMZ7912G',
+  'SNX6148B',
+  'SLC6318L',
+  'SMZ6023D',
+  'SNA4496E',
+  'SNC5016R',
+  'SMK4973D',
+  'SBR8808R',
+  'SNN5085H'
 ].join('\n');
 
 let touchStartTime = 0;
