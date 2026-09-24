@@ -14,29 +14,32 @@
     <div id="app">
       <!-- Top Navigation Header -->
       <header class="app-header">
-        <div class="brand">
-          <div class="logo-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-              <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-              <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6" />
-              <circle cx="16.5" cy="7.5" r="2.5" fill="#10b981" stroke="none" />
-            </svg>
+        <div class="header-top">
+          <div class="brand">
+            <div class="logo-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6" />
+                <circle cx="16.5" cy="7.5" r="2.5" fill="#10b981" stroke="none" />
+              </svg>
+            </div>
+            <div>
+              <h1>ALPR Sentinel</h1>
+            </div>
           </div>
-          <div>
-            <h1>ALPR Sentinel</h1>
+
+          <div class="header-status">
+            <label class="gpu-checkbox-label" title="Enable WebGPU provider for YOLO detector (off by default)">
+              <input type="checkbox" id="gpuToggle" />
+              <span class="gpu-label-text">Enable GPU</span>
+            </label>
           </div>
         </div>
 
-        <div class="header-status">
-          <label class="gpu-checkbox-label" title="Enable WebGPU provider for YOLO detector (off by default)">
-            <input type="checkbox" id="gpuToggle" />
-            <span class="gpu-label-text">Enable GPU</span>
-          </label>
-          <div id="engineStatusBadge" class="status-badge loading">
-            <span class="status-dot"></span>
-            <span id="engineStatusText">Initializing Wasm engine...</span>
-          </div>
+        <div id="engineStatusBadge" class="status-badge loading">
+          <span class="status-dot"></span>
+          <span id="engineStatusText">Initializing Wasm engine...</span>
         </div>
       </header>
 
