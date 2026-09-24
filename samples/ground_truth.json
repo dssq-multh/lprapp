@@ -253,5 +253,120 @@
         "format": "Single-line oblong (black background, white font)"
       }
     ]
+  },
+  {
+    "id": "photo_212054",
+    "name": "Photo 11 (IMG20260924212054.jpg)",
+    "filename": "IMG20260924212054.jpg",
+    "path": "/samples/photos/IMG20260924212054.jpg",
+    "primaryPlate": "SLK5331L",
+    "allPlates": ["SLK5331L", "SMK8837M", "SMZ7912G", "SNX6148B"],
+    "vehicles": [
+      {
+        "description": "White Honda Vezel / HR-V (center left)",
+        "plate": "SLK5331L",
+        "format": "Two-line square stacked (black background, white font)"
+      },
+      {
+        "description": "Black Mercedes C-Class Cabriolet (center right)",
+        "plate": "SMK8837M",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "White Kia EV6 (far right)",
+        "plate": "SMZ7912G",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "Grey Mercedes SUV (background left behind pillar)",
+        "plate": "SNX6148B",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  },
+  {
+    "id": "photo_212103",
+    "name": "Photo 12 (IMG20260924212103.jpg)",
+    "filename": "IMG20260924212103.jpg",
+    "path": "/samples/photos/IMG20260924212103.jpg",
+    "primaryPlate": "SLC6318L",
+    "allPlates": ["SLC6318L", "SMZ6023D", "SNA4496E"],
+    "vehicles": [
+      {
+        "description": "Black Honda Vezel / HR-V (handicap lot)",
+        "plate": "SLC6318L",
+        "format": "Two-line square stacked (black background, white font)"
+      },
+      {
+        "description": "White Lexus NX SUV (center right)",
+        "plate": "SMZ6023D",
+        "format": "Single-line oblong (black background, white font)"
+      },
+      {
+        "description": "White Audi A3/A4 Sedan (far right)",
+        "plate": "SNA4496E",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  },
+  {
+    "id": "photo_212121",
+    "name": "Photo 13 (IMG20260924212121.jpg)",
+    "filename": "IMG20260924212121.jpg",
+    "path": "/samples/photos/IMG20260924212121.jpg",
+    "primaryPlate": "SNC5016R",
+    "allPlates": ["SNC5016R", "SMK4973D"],
+    "vehicles": [
+      {
+        "description": "White Toyota Esquire MPV (center)",
+        "plate": "SNC5016R",
+        "format": "Two-line square stacked (black background, white font)"
+      },
+      {
+        "description": "Black Kia Stonic / Rio (left)",
+        "plate": "SMK4973D",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  },
+  {
+    "id": "photo_212156",
+    "name": "Photo 14 (IMG20260924212156.jpg)",
+    "filename": "IMG20260924212156.jpg",
+    "path": "/samples/photos/IMG20260924212156.jpg",
+    "primaryPlate": "SBR8808R",
+    "allPlates": ["SBR8808R", "SND33T"],
+    "vehicles": [
+      {
+        "description": "White Toyota Sienta MPV (center right)",
+        "plate": "SBR8808R",
+        "format": "Two-line square stacked (black background, white font)"
+      },
+      {
+        "description": "Black Hyundai Palisade SUV (left)",
+        "plate": "SND33T",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
+  },
+  {
+    "id": "photo_212159",
+    "name": "Photo 15 (IMG20260924212159.jpg)",
+    "filename": "IMG20260924212159.jpg",
+    "path": "/samples/photos/IMG20260924212159.jpg",
+    "primaryPlate": "SBR8808R",
+    "allPlates": ["SBR8808R", "SNN5085H"],
+    "vehicles": [
+      {
+        "description": "White Toyota Sienta MPV (left)",
+        "plate": "SBR8808R",
+        "format": "Two-line square stacked (black background, white font)"
+      },
+      {
+        "description": "Black Toyota Corolla Altis Sedan (center)",
+        "plate": "SNN5085H",
+        "format": "Single-line oblong (black background, white font)"
+      }
+    ]
   }
 ]

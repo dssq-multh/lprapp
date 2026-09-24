@@ -8,8 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/lprapp/assets/index-CnsQkRbq.js"></script>
-    <link rel="stylesheet" crossorigin href="/lprapp/assets/index-DMX9GDUR.css">
+    <script type="module" crossorigin src="/lprapp/assets/index-CS4RfDUi.js"></script>
+    <link rel="stylesheet" crossorigin href="/lprapp/assets/index-B0GXoniN.css">
   </head>
   <body>
     <div id="app">
@@ -128,7 +128,7 @@
                     <circle cx="8.5" cy="8.5" r="1.5"/>
                     <polyline points="21 15 16 10 5 21"/>
                   </svg>
-                  <select id="sampleSelect" class="sample-select" title="Choose from 12 sample car photos">
+                  <select id="sampleSelect" class="sample-select" title="Choose from 17 sample car photos">
                     <option value="/samples/car_cal8942.jpg" selected>🚗 Car 1 (CAL8942)</option>
                     <option value="/samples/car_b391klt.jpg">🚗 Car 2 (B391KLT)</option>
                     <option value="/samples/photos/IMG20260923200603.jpg">📸 Photo 1 (0603)</option>
@@ -141,6 +141,11 @@
                     <option value="/samples/photos/IMG20260923200637.jpg">📸 Photo 8 (0637)</option>
                     <option value="/samples/photos/IMG20260923200640.jpg">📸 Photo 9 (0640)</option>
                     <option value="/samples/photos/IMG20260923200643.jpg">📸 Photo 10 (0643)</option>
+                    <option value="/samples/photos/IMG20260924212054.jpg">📸 Photo 11 (2054 - 2-Line)</option>
+                    <option value="/samples/photos/IMG20260924212103.jpg">📸 Photo 12 (2103 - 2-Line)</option>
+                    <option value="/samples/photos/IMG20260924212121.jpg">📸 Photo 13 (2121 - 2-Line)</option>
+                    <option value="/samples/photos/IMG20260924212156.jpg">📸 Photo 14 (2156 - 2-Line)</option>
+                    <option value="/samples/photos/IMG20260924212159.jpg">📸 Photo 15 (2159 - 2-Line)</option>
                   </select>
                 </div>
                 <button id="btnPrevSample" class="btn btn-ghost btn-xs" title="Previous sample photo">◀</button>
@@ -217,6 +222,64 @@
               </span>
               <span id="btnTapToDetectText" class="shutter-text">Tap to Detect</span>
             </button>
+
+            <!-- Static Image Simulation Controls (Zoom & Pan) -->
+            <div id="staticZoomControls" class="static-zoom-controls" style="display:none;" role="toolbar" aria-label="Static Image Zoom and Pan Controls">
+              <div class="zoom-btn-group">
+                <button id="btnStaticPanLeft" class="zoom-ctrl-btn zoom-btn-icon" title="Move Left (Pan Left) [←]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                </button>
+                <button id="btnStaticPanUp" class="zoom-ctrl-btn zoom-btn-icon" title="Move Up (Pan Up) [↑]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="18 15 12 9 6 15"></polyline>
+                  </svg>
+                </button>
+                <button id="btnStaticPanCenter" class="zoom-ctrl-btn zoom-btn-icon" title="Reset Pan to Center [0]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 3v3m0 12v3M3 12h3m12 0h3"></path>
+                  </svg>
+                </button>
+                <button id="btnStaticPanDown" class="zoom-ctrl-btn zoom-btn-icon" title="Move Down (Pan Down) [↓]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+                <button id="btnStaticPanRight" class="zoom-ctrl-btn zoom-btn-icon" title="Move Right (Pan Right) [→]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="zoom-divider"></div>
+
+              <div class="zoom-btn-group">
+                <button id="btnStaticZoomOut" class="zoom-ctrl-btn zoom-btn-icon" title="Zoom Out [-]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </button>
+                <span id="staticZoomLevelText" class="zoom-level-text" title="Current Zoom Factor">1.0×</span>
+                <button id="btnStaticZoomIn" class="zoom-ctrl-btn zoom-btn-icon" title="Zoom In [+]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="zoom-divider"></div>
+
+              <div class="zoom-presets">
+                <button class="zoom-preset-btn active" data-zoom="1.0" title="1× (Full View)">1×</button>
+                <button class="zoom-preset-btn" data-zoom="1.5" title="1.5× Zoom">1.5×</button>
+                <button class="zoom-preset-btn" data-zoom="2.0" title="2× Zoom">2×</button>
+                <button class="zoom-preset-btn" data-zoom="3.0" title="3× Zoom">3×</button>
+              </div>
+            </div>
           </div>
         </section>
       </main>
