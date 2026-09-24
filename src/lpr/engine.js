@@ -308,10 +308,13 @@ export class LprEngine {
   async detect(image, opts = {}) {
     const thresh = opts.scoreThreshold || this.scoreThreshold;
     const w = image.width, h = image.height;
+    // Always single-pass full frame (tiling disabled always for now)
     const ts = [{ x: 0, y: 0, w, h }];
+    /*
     if (opts.tile !== false && (w > SPOT_W * 1.5 || h > SPOT_H * 1.5)) {
       ts.push(...tiles(w, h));
     }
+    */
 
     const all = [];
     for (let i = 0; i < ts.length; i++) {

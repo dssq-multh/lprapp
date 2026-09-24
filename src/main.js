@@ -430,8 +430,8 @@ async function processCurrentFrame() {
 
     scanResText.textContent = `${fitted.width}×${fitted.height} (max 1080px)`;
 
-    // Run OpenALPR Wasm inference via Web Worker
-    const detections = await engine.readAll(fitted.canvas, { tile: true });
+    // Run OpenALPR Wasm inference via Web Worker (tiling disabled)
+    const detections = await engine.readAll(fitted.canvas, { tile: false });
 
     const t1 = performance.now();
     const latency = Math.round(t1 - t0);

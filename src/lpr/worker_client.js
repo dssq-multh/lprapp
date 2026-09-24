@@ -59,6 +59,7 @@ export class LprWorkerClient {
       this.pending.set(id, {
         resolve: (data) => {
           this.isReady = true;
+          this.paddleOcr = true;
           if (data && typeof data.enableGpu === 'boolean') {
             this.enableGpu = data.enableGpu;
           }
