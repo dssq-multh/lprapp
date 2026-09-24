@@ -679,6 +679,70 @@ body.static-active-mode .camera-select-wrap {
   transition: opacity 0.25s ease;
 }
 
+/* iOS Tap to Detect Shutter Button */
+.tap-to-detect-btn {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #38bdf8;
+  border: 1.5px solid rgba(56, 189, 248, 0.5);
+  border-radius: 9999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.25);
+  cursor: pointer;
+  z-index: 50;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tap-to-detect-btn:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+  color: #fff;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.tap-to-detect-btn:active {
+  transform: translateX(-50%) scale(0.94);
+  background: rgba(56, 189, 248, 0.3);
+}
+
+.tap-to-detect-btn.is-detecting {
+  border-color: rgba(245, 158, 11, 0.9);
+  color: #fbbf24;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 25px rgba(245, 158, 11, 0.35);
+  pointer-events: none;
+}
+
+.viewport-container.shutter-flash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 45;
+  animation: flashAnim 0.15s ease-out forwards;
+}
+
+@keyframes flashAnim {
+  0% { opacity: 0.4; }
+  100% { opacity: 0; }
+}
+
 /* Idle Overlay */
 .idle-overlay {
   position: absolute;

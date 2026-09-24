@@ -19,6 +19,9 @@ const idleOverlay = document.getElementById('idleOverlay');
 const btnIdleStart = document.getElementById('btnIdleStart');
 const btnIdleSample = document.getElementById('btnIdleSample');
 const streamBadge = document.getElementById('streamBadge');
+const streamBadgeText = document.getElementById('streamBadgeText');
+const btnTapToDetect = document.getElementById('btnTapToDetect');
+const btnTapToDetectText = document.getElementById('btnTapToDetectText');
 const scanFpsText = document.getElementById('scanFpsText');
 const scanLatencyText = document.getElementById('scanLatencyText');
 const scanResText = document.getElementById('scanResText');
@@ -85,6 +88,7 @@ if (typeof window !== 'undefined') {
   window.__isIOS = isIOS;
   window.__checkIsIOS = checkIsIOS;
   window.__setIsIOS = (v) => { mockIsIOS = v; };
+  window.__triggerManualDetection = () => triggerManualDetection();
 }
 let isStreaming = false;
 let mediaStream = null;
@@ -349,8 +353,21 @@ async function startCamera() {
     btnRecognize.classList.add('is-recognizing');
     btnRecognizeText.textContent = 'Stop Streaming';
 
-    engineStatusBadge.className = 'status-badge active';
-    engineStatusText.textContent = 'Live Streaming & Recognizing';
+    if (checkIsIOS()) {
+      if (streamBadgeText) streamBadgeText.textContent = 'TAP TO DETECT';
+      engineStatusBadge.className = 'status-badge ready';
+      engineStatusText.textContent = 'Camera Ready • Tap to Detect';
+      scanFpsText.textContent = 'Tap to Scan';
+      if (btnTapToDetect) {
+        btnTapToDetect.style.display = 'flex';
+        if (btnTapToDetectText) btnTapToDetectText.textContent = 'Tap to Detect';
+      }
+    } else {
+      if (streamBadgeText) streamBadgeText.textContent = 'LIVE RECOGNIZING';
+      engineStatusBadge.className = 'status-badge active';
+      engineStatusText.textContent = 'Live Streaming & Recognizing';
+      if (btnTapToDetect) btnTapToDetect.style.display = 'none';
+    }
 
     // Refresh devices once permissions are granted so labels appear
     setupCameraDevices();
@@ -361,7 +378,7 @@ async function startCamera() {
     nextAllowedFrameTime = 0;
     lastDetectionFoundTime = performance.now();
 
-    // Start recognition loop
+    // Start recognition loop (continuous on non-iOS; manual tap on iOS)
     requestRecognitionLoop();
   } catch (err) {
     console.error('Failed to open camera:', err);
@@ -387,6 +404,10 @@ function stopCamera() {
   zoomCapabilities = null;
   currentZoom = 1.0;
   hideZoomBadge();
+
+  if (btnTapToDetect) {
+    btnTapToDetect.style.display = 'none';
+  }
 
   if (mediaStream) {
     mediaStream.getTracks().forEach((track) => track.stop());
@@ -425,6 +446,9 @@ let lastDetectionFoundTime = performance.now();
  */
 function requestRecognitionLoop() {
   if (!isStreaming || activeMode !== 'camera') return;
+
+  // On iOS, automated background loop is disabled; detection is strictly user tap-to-trigger
+  if (checkIsIOS()) return;
 
   const now = performance.now();
   if (!isProcessingFrame && videoElement.readyState >= 2 && now >= nextAllowedFrameTime) {
@@ -467,7 +491,9 @@ async function processCurrentFrame() {
     scanLatencyText.textContent = `${latency} ms`;
 
     // Calculate FPS or s/frame if below 1 FPS
-    if (activeMode === 'camera') {
+    if (checkIsIOS()) {
+      scanFpsText.textContent = 'Manual Tap';
+    } else if (activeMode === 'camera') {
       frameCount++;
       const elapsed = t1 - fpsLastTime;
       if (elapsed >= 1000) {
@@ -503,15 +529,60 @@ async function processCurrentFrame() {
     // sleep 1000ms after each frame to avoid burning CPU when inactive.
     // Otherwise, sleep 2x detection latency (33% compute / 67% rest).
     const isIdle = (now - lastDetectionFoundTime) >= 3000;
-    let sleepMs = isIdle ? 1000 : (latency * 2);
-
-    // Only for iOS, enforce a minimum sleep of 2s between detections to keep device cool and prevent WebKit watchdog kills
-    if (checkIsIOS()) {
-      sleepMs = Math.max(sleepMs, 2000);
-      console.log(`[iOS Throttle] Sleeping ${sleepMs}ms between detections (latency: ${latency}ms, idle: ${isIdle})`);
-    }
-
+    const sleepMs = isIdle ? 1000 : (latency * 2);
     nextAllowedFrameTime = now + sleepMs;
+  }
+}
+
+/**
+ * Triggers manual single-shot detection (used on iOS).
+ */
+async function triggerManualDetection() {
+  if (!isStreaming || activeMode !== 'camera') {
+    if (!isStreaming) {
+      await startCamera();
+    }
+    return;
+  }
+  if (isProcessingFrame) {
+    console.log('[iOS Tap] Already processing frame, ignoring tap');
+    return;
+  }
+  if (videoElement.readyState < 2) {
+    console.log('[iOS Tap] Video not ready yet');
+    return;
+  }
+
+  console.log('[iOS Tap] Manual detection triggered by user tap');
+
+  // Flash visual feedback
+  viewportContainer.classList.remove('shutter-flash');
+  void viewportContainer.offsetWidth; // force reflow
+  viewportContainer.classList.add('shutter-flash');
+  setTimeout(() => {
+    viewportContainer.classList.remove('shutter-flash');
+  }, 180);
+
+  if (btnTapToDetect) {
+    btnTapToDetect.classList.add('is-detecting');
+    if (btnTapToDetectText) btnTapToDetectText.textContent = 'Detecting...';
+  }
+  engineStatusBadge.className = 'status-badge active';
+  engineStatusText.textContent = 'Analyzing Frame...';
+
+  try {
+    await processCurrentFrame();
+  } catch (err) {
+    console.error('Manual detection error:', err);
+  } finally {
+    if (btnTapToDetect) {
+      btnTapToDetect.classList.remove('is-detecting');
+      if (btnTapToDetectText) btnTapToDetectText.textContent = 'Tap to Detect';
+    }
+    if (isStreaming && activeMode === 'camera') {
+      engineStatusBadge.className = 'status-badge ready';
+      engineStatusText.textContent = 'Camera Ready • Tap to Detect';
+    }
   }
 }
 
@@ -829,8 +900,17 @@ const SAMPLE_TARGET_PLATES = [
   'SND33T'
 ].join('\n');
 
-// Native camera pinch-to-zoom touch handlers on mobile
+let touchStartTime = 0;
+let touchStartX = 0;
+let touchStartY = 0;
+
+// Native camera pinch-to-zoom touch handlers on mobile + tap detection on iOS
 viewportContainer.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 1) {
+    touchStartTime = performance.now();
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }
   if (e.touches.length === 2 && activeMode === 'camera' && zoomCapabilities) {
     e.preventDefault();
     const t1 = e.touches[0];
@@ -855,6 +935,21 @@ viewportContainer.addEventListener('touchmove', (e) => {
 }, { passive: false });
 
 viewportContainer.addEventListener('touchend', (e) => {
+  if (e.touches.length === 0 && pinchStartDistance === 0) {
+    const elapsed = performance.now() - touchStartTime;
+    const changed = e.changedTouches[0];
+    if (changed) {
+      const dist = Math.hypot(changed.clientX - touchStartX, changed.clientY - touchStartY);
+      if (elapsed < 350 && dist < 15) {
+        // Clean single tap on screen
+        if (e.target.closest('button, select, input, label')) return;
+        if (activeMode === 'camera' && checkIsIOS()) {
+          e.preventDefault();
+          triggerManualDetection();
+        }
+      }
+    }
+  }
   if (e.touches.length < 2) {
     pinchStartDistance = 0;
   }
@@ -863,6 +958,22 @@ viewportContainer.addEventListener('touchend', (e) => {
 viewportContainer.addEventListener('touchcancel', () => {
   pinchStartDistance = 0;
 });
+
+// Also support desktop mouse click on viewport when running in iOS mode
+viewportContainer.addEventListener('click', (e) => {
+  if (e.target.closest('button, select, input, label')) return;
+  if (activeMode === 'camera' && checkIsIOS()) {
+    triggerManualDetection();
+  }
+});
+
+// Manual shutter button for iOS
+if (btnTapToDetect) {
+  btnTapToDetect.addEventListener('click', (e) => {
+    e.stopPropagation();
+    triggerManualDetection();
+  });
+}
 
 // Also support trackpad pinch gesture on desktop/laptop
 viewportContainer.addEventListener('wheel', (e) => {
