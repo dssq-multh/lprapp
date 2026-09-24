@@ -1,4 +1,4 @@
-// Polyfills for DOM globals required by dependencies in a Web Worker environment
+// Polyfills for DOM globals required by dependencies (OpenCV.js, PaddleOCR) in a Web Worker environment
 if (typeof document === 'undefined') {
   globalThis.document = {
     createElement(tagName) {
@@ -6,6 +6,9 @@ if (typeof document === 'undefined') {
         return new OffscreenCanvas(300, 150);
       }
       throw new Error(`document.createElement(${tagName}) is not supported in Worker`);
+    },
+    getElementById() {
+      return null;
     }
   };
 }
@@ -14,8 +17,20 @@ if (typeof window === 'undefined') {
   globalThis.window = globalThis;
 }
 
-if (typeof HTMLCanvasElement === 'undefined' && typeof OffscreenCanvas !== 'undefined') {
-  globalThis.HTMLCanvasElement = OffscreenCanvas;
+if (typeof HTMLCanvasElement === 'undefined') {
+  globalThis.HTMLCanvasElement = typeof OffscreenCanvas !== 'undefined' ? OffscreenCanvas : class HTMLCanvasElement {};
+}
+
+if (typeof HTMLImageElement === 'undefined') {
+  globalThis.HTMLImageElement = class HTMLImageElement {};
+}
+
+if (typeof HTMLVideoElement === 'undefined') {
+  globalThis.HTMLVideoElement = class HTMLVideoElement {};
+}
+
+if (typeof Image === 'undefined') {
+  globalThis.Image = class Image {};
 }
 
 import { LprEngine } from './engine.js';
