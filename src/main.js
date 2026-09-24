@@ -49,7 +49,7 @@ const loadingErrorMsg = document.getElementById('loadingErrorMsg');
 const btnDismissLoadingOverlay = document.getElementById('btnDismissLoadingOverlay');
 
 // iOS detection (iPhone, iPod, iPad including iPadOS desktop UA)
-export const isIOS = typeof navigator !== 'undefined' && (
+export const isIOS = false && typeof navigator !== 'undefined' && (
   /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 );
@@ -538,9 +538,11 @@ async function processCurrentFrame() {
 
     // If zero bounding boxes have been found in the last 3s,
     // sleep 1000ms after each frame to avoid burning CPU when inactive.
-    // Otherwise, sleep 2x detection latency (33% compute / 67% rest).
+    // Otherwise, sleep 2x detection latency (33% compute / 67% rest),
+    // with a minimum sleep of 200ms enforced for all devices.
     const isIdle = (now - lastDetectionFoundTime) >= 3000;
-    const sleepMs = isIdle ? 1000 : (latency * 2);
+    const baseSleep = isIdle ? 1000 : (latency * 2);
+    const sleepMs = Math.max(baseSleep, 200);
     nextAllowedFrameTime = now + sleepMs;
   }
 }
