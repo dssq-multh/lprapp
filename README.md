@@ -1,4 +1,4 @@
-# ALPR Sentinel — In-Browser License Plate Recognition Web App
+# ALPR Online — In-Browser License Plate Recognition Web App
 
 A high-performance web app for real-time vehicle license plate recognition running entirely client-side using WebAssembly (Wasm).
 
