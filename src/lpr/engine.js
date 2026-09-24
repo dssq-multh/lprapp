@@ -165,6 +165,12 @@ function preprocessPlateCrop(sourceCanvas, box, quad) {
   return { canvas: c, sx, sy, sw, sh, targetW, targetH };
 }
 
+// High-speed CDN URLs (served with Brotli/gzip compression and 1-year immutable edge caching)
+// Cloudflare cdnjs compresses ort-wasm-simd-threaded.jsep.wasm from 28.3MB down to ~2.9MB.
+const CDN_ORT_WASM = 'https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.20.1/';
+const CDN_PADDLE_DET = 'https://dssq-multh.github.io/lprapp/models/PP-OCRv6_tiny_det_onnx_infer.tar';
+const CDN_PADDLE_REC = 'https://dssq-multh.github.io/lprapp/models/PP-OCRv6_tiny_rec_onnx_infer.tar';
+
 export class LprEngine {
   constructor(opts = {}) {
     this.base = opts.base || '/lpr/';
@@ -240,8 +246,12 @@ export class LprEngine {
 
     const baseUrl = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '') + '/';
 
+    // Prefer high-speed Brotli-compressed CDN for ONNX Runtime WASM assets (2.9MB vs 28.3MB local uncompressed)
+    const isOnline = typeof navigator === 'undefined' || navigator.onLine !== false;
+    const wasmPaths = isOnline ? CDN_ORT_WASM : `${baseUrl}ort-wasm/`;
+
     if (onStatus) onStatus('Configuring WebAssembly runtime (1 CPU)...');
-    ort.env.wasm.wasmPaths = `${baseUrl}ort-wasm/`;
+    ort.env.wasm.wasmPaths = wasmPaths;
     // Explicitly restrict ONNX Runtime WASM runtime to 1 CPU thread
     ort.env.wasm.numThreads = 1;
 
@@ -252,21 +262,40 @@ export class LprEngine {
     this.enableGpu = enableGpu;
 
     if (onStatus) onStatus('Initializing PaddleOCR Wasm engine (1 CPU)...');
+    const paddleDetUrl = isOnline ? CDN_PADDLE_DET : `${baseUrl}models/PP-OCRv6_tiny_det_onnx_infer.tar`;
+    const paddleRecUrl = isOnline ? CDN_PADDLE_REC : `${baseUrl}models/PP-OCRv6_tiny_rec_onnx_infer.tar`;
+
     try {
       this.paddleOcr = await PaddleOCR.create({
         textDetectionModelName: 'PP-OCRv6_tiny_det',
-        textDetectionModelAsset: { url: `${baseUrl}models/PP-OCRv6_tiny_det_onnx_infer.tar` },
+        textDetectionModelAsset: { url: paddleDetUrl },
         textRecognitionModelName: 'PP-OCRv6_tiny_rec',
-        textRecognitionModelAsset: { url: `${baseUrl}models/PP-OCRv6_tiny_rec_onnx_infer.tar` },
+        textRecognitionModelAsset: { url: paddleRecUrl },
         ortOptions: {
           backend: 'wasm',
-          wasmPaths: `${baseUrl}ort-wasm/`,
+          wasmPaths: wasmPaths,
           numThreads: 1
         }
       });
-      console.log('PaddleOCR Wasm engine ready!');
-    } catch (err) {
-      console.error('PaddleOCR initialization error:', err);
+      console.log('PaddleOCR Wasm engine ready via CDN!');
+    } catch (cdnErr) {
+      console.warn('PaddleOCR CDN load failed, falling back to local files:', cdnErr);
+      try {
+        this.paddleOcr = await PaddleOCR.create({
+          textDetectionModelName: 'PP-OCRv6_tiny_det',
+          textDetectionModelAsset: { url: `${baseUrl}models/PP-OCRv6_tiny_det_onnx_infer.tar` },
+          textRecognitionModelName: 'PP-OCRv6_tiny_rec',
+          textRecognitionModelAsset: { url: `${baseUrl}models/PP-OCRv6_tiny_rec_onnx_infer.tar` },
+          ortOptions: {
+            backend: 'wasm',
+            wasmPaths: `${baseUrl}ort-wasm/`,
+            numThreads: 1
+          }
+        });
+        console.log('PaddleOCR local fallback ready!');
+      } catch (localErr) {
+        console.error('PaddleOCR initialization error:', localErr);
+      }
     }
 
     this.isReady = true;
