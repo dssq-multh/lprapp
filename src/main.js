@@ -341,6 +341,7 @@ async function startCamera() {
     // Reset FPS calculation for fresh stream
     frameCount = 0;
     fpsLastTime = performance.now();
+    nextAllowedFrameTime = 0;
 
     // Start recognition loop
     requestRecognitionLoop();
@@ -395,14 +396,19 @@ function stopCamera() {
   scanLatencyText.textContent = '-- ms';
 }
 
+let nextAllowedFrameTime = 0;
+
 /**
  * Continuous frame recognition loop.
  * Runs non-blocking: offloaded to Web Worker without delaying video display.
+ * Dynamic throttling: Sleeps for 2x the time it took to detect (33% duty cycle, 67% rest),
+ * preventing CPU saturation and thermal throttling across all devices.
  */
 function requestRecognitionLoop() {
   if (!isStreaming || activeMode !== 'camera') return;
 
-  if (!isProcessingFrame && videoElement.readyState >= 2) {
+  const now = performance.now();
+  if (!isProcessingFrame && videoElement.readyState >= 2 && now >= nextAllowedFrameTime) {
     processCurrentFrame();
   }
 
@@ -467,6 +473,10 @@ async function processCurrentFrame() {
     console.error('Frame processing error:', err);
   } finally {
     isProcessingFrame = false;
+    const latency = Math.round(performance.now() - t0);
+    // Sleep for 2x the time it took to detect (giving 2/3 of time to CPU rest/cooling)
+    const sleepMs = latency * 2;
+    nextAllowedFrameTime = performance.now() + sleepMs;
   }
 }
 
