@@ -99,6 +99,35 @@ self.onmessage = async (event) => {
         break;
       }
 
+      case 'paddlePredict': {
+        if (!engine || !engine.paddleOcr) throw new Error('PaddleOCR engine not initialized');
+        const { bitmap, imageData, width, height } = payload || {};
+
+        const canvas = new OffscreenCanvas(width, height);
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        if (bitmap) {
+          ctx.drawImage(bitmap, 0, 0);
+          try { bitmap.close(); } catch (_) {}
+        } else if (imageData) {
+          ctx.putImageData(imageData, 0, 0);
+        } else {
+          throw new Error('No valid image data or bitmap received');
+        }
+
+        const t0 = performance.now();
+        const results = await engine.paddleOcr.predict(canvas);
+        const duration = Math.round(performance.now() - t0);
+
+        self.postMessage({
+          type: 'paddlePredictDone',
+          id,
+          results,
+          duration
+        });
+        break;
+      }
+
       default:
         console.warn('Unknown message type in LPR worker:', type);
     }

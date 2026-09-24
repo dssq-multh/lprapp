@@ -5,7 +5,7 @@
     "groundTruth": [
       "CAL8942"
     ],
-    "durationMs": 66,
+    "durationMs": 70,
     "detections": [
       {
         "text": "CAL8942",
@@ -28,7 +28,7 @@
     "groundTruth": [
       "B391KLT"
     ],
-    "durationMs": 47,
+    "durationMs": 45,
     "detections": [
       {
         "text": "B39IKLT",
@@ -53,7 +53,7 @@
       "SMJ6650C",
       "SBU999J"
     ],
-    "durationMs": 61,
+    "durationMs": 62,
     "detections": [
       {
         "text": "SBU999J",
@@ -90,7 +90,7 @@
       "SMJ6650C",
       "ES3960A"
     ],
-    "durationMs": 45,
+    "durationMs": 40,
     "detections": [
       {
         "text": "SMJ665OC",
@@ -116,7 +116,7 @@
       "SNF9945S",
       "SLX9361E"
     ],
-    "durationMs": 53,
+    "durationMs": 55,
     "detections": [
       {
         "text": "SML6579R",
@@ -179,7 +179,7 @@
       "SNF9945S",
       "SKG516L"
     ],
-    "durationMs": 52,
+    "durationMs": 54,
     "detections": [
       {
         "text": "SNF9945S",
@@ -240,7 +240,7 @@
     "groundTruth": [
       "SLE5647H"
     ],
-    "durationMs": 35,
+    "durationMs": 36,
     "detections": [
       {
         "text": "SLE5647H",
@@ -265,7 +265,7 @@
       "SNY9977A",
       "SMU5178Z"
     ],
-    "durationMs": 75,
+    "durationMs": 76,
     "detections": [
       {
         "text": "SJS561D",

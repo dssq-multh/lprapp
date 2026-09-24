@@ -166,8 +166,7 @@ function preprocessPlateCrop(sourceCanvas, box, quad) {
 }
 
 // High-speed CDN URLs (served with Brotli/gzip compression and 1-year immutable edge caching)
-// Cloudflare cdnjs compresses ort-wasm-simd-threaded.jsep.wasm from 28.3MB down to ~2.9MB.
-const CDN_ORT_WASM = 'https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.20.1/';
+const CDN_ORT_WASM = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/';
 const CDN_PADDLE_DET = 'https://dssq-multh.github.io/lprapp/models/PP-OCRv6_tiny_det_onnx_infer.tar';
 const CDN_PADDLE_REC = 'https://dssq-multh.github.io/lprapp/models/PP-OCRv6_tiny_rec_onnx_infer.tar';
 
@@ -246,8 +245,10 @@ export class LprEngine {
 
     const baseUrl = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '') + '/';
 
-    // Prefer high-speed Brotli-compressed CDN for ONNX Runtime WASM assets (2.9MB vs 28.3MB local uncompressed)
-    const isOnline = typeof navigator === 'undefined' || navigator.onLine !== false;
+    // On localhost, load directly from local dev server at SSD speed.
+    // In production/GitHub Pages, use high-speed CDN assets with local fallback.
+    const isLocal = typeof location !== 'undefined' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+    const isOnline = !isLocal && (typeof navigator === 'undefined' || navigator.onLine !== false);
     const wasmPaths = isOnline ? CDN_ORT_WASM : `${baseUrl}ort-wasm/`;
 
     if (onStatus) onStatus('Configuring WebAssembly runtime (1 CPU)...');

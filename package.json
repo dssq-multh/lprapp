@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "npm run build && gh-pages -d dist",
+    "audit": "node scripts/audit.js",
+    "audit:direct": "node scripts/audit_direct_paddle.js"
   },
   "author": "",
   "license": "ISC",

@@ -156,6 +156,55 @@ export class LprWorkerClient {
     });
   }
 
+  async predictDirectPaddle(canvas) {
+    const id = ++this.reqSeq;
+    const width = canvas.width;
+    const height = canvas.height;
+
+    return new Promise(async (resolve, reject) => {
+      this.pending.set(id, {
+        resolve: (data) => resolve(data),
+        reject
+      });
+
+      try {
+        if (typeof createImageBitmap === 'function') {
+          const bitmap = await createImageBitmap(canvas);
+          this.worker.postMessage(
+            {
+              type: 'paddlePredict',
+              id,
+              payload: {
+                bitmap,
+                width,
+                height
+              }
+            },
+            [bitmap]
+          );
+        } else {
+          const ctx = canvas.getContext('2d');
+          const imageData = ctx.getImageData(0, 0, width, height);
+          this.worker.postMessage(
+            {
+              type: 'paddlePredict',
+              id,
+              payload: {
+                imageData,
+                width,
+                height
+              }
+            },
+            [imageData.data.buffer]
+          );
+        }
+      } catch (err) {
+        this.pending.delete(id);
+        reject(err);
+      }
+    });
+  }
+
   terminate() {
     if (this.worker) {
       this.worker.terminate();
