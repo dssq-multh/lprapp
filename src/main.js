@@ -340,6 +340,7 @@ async function startCamera() {
     frameCount = 0;
     fpsLastTime = performance.now();
     nextAllowedFrameTime = 0;
+    lastDetectionFoundTime = performance.now();
 
     // Start recognition loop
     requestRecognitionLoop();
@@ -395,12 +396,13 @@ function stopCamera() {
 }
 
 let nextAllowedFrameTime = 0;
+let lastDetectionFoundTime = performance.now();
 
 /**
  * Continuous frame recognition loop.
  * Runs non-blocking: offloaded to Web Worker without delaying video display.
- * Dynamic throttling: Sleeps for 2x the time it took to detect (33% duty cycle, 67% rest),
- * preventing CPU saturation and thermal throttling across all devices.
+ * Dynamic throttling: Sleeps for 2x detection latency when plates are visible,
+ * and sleeps 1000ms if zero bounding boxes were detected in the last 3s.
  */
 function requestRecognitionLoop() {
   if (!isStreaming || activeMode !== 'camera') return;
@@ -437,6 +439,10 @@ async function processCurrentFrame() {
     // Run OpenALPR Wasm inference via Web Worker (tiling disabled)
     const detections = await engine.readAll(fitted.canvas, { tile: false });
 
+    if (detections && detections.length > 0) {
+      lastDetectionFoundTime = performance.now();
+    }
+
     const t1 = performance.now();
     const latency = Math.round(t1 - t0);
     scanLatencyText.textContent = `${latency} ms`;
@@ -471,10 +477,15 @@ async function processCurrentFrame() {
     console.error('Frame processing error:', err);
   } finally {
     isProcessingFrame = false;
-    const latency = Math.round(performance.now() - t0);
-    // Sleep for 2x the time it took to detect (giving 2/3 of time to CPU rest/cooling)
-    const sleepMs = latency * 2;
-    nextAllowedFrameTime = performance.now() + sleepMs;
+    const now = performance.now();
+    const latency = Math.round(now - t0);
+
+    // If zero bounding boxes have been found in the last 3s,
+    // sleep 1000ms after each frame to avoid burning CPU when inactive.
+    // Otherwise, sleep 2x detection latency (33% compute / 67% rest).
+    const isIdle = (now - lastDetectionFoundTime) >= 3000;
+    const sleepMs = isIdle ? 1000 : (latency * 2);
+    nextAllowedFrameTime = now + sleepMs;
   }
 }
 
