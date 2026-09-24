@@ -40,7 +40,9 @@ const gpuToggleToolbar = document.getElementById('gpuToggleToolbar');
 // Static Image Simulation Zoom & Pan Elements
 const staticZoomControls = document.getElementById('staticZoomControls');
 const btnStaticPanLeft = document.getElementById('btnStaticPanLeft');
+const btnStaticPanUp = document.getElementById('btnStaticPanUp');
 const btnStaticPanCenter = document.getElementById('btnStaticPanCenter');
+const btnStaticPanDown = document.getElementById('btnStaticPanDown');
 const btnStaticPanRight = document.getElementById('btnStaticPanRight');
 const btnStaticZoomOut = document.getElementById('btnStaticZoomOut');
 const btnStaticZoomIn = document.getElementById('btnStaticZoomIn');
@@ -49,7 +51,8 @@ const staticZoomPresets = document.querySelectorAll('.zoom-preset-btn');
 
 let currentStaticSourceImg = null;
 let staticZoom = 1.0;
-let staticPanRatio = 0.0;
+let staticPanX = 0.0;
+let staticPanY = 0.0;
 
 // Global Loading Overlay Elements (YOLO + PaddleOCR)
 const appLoadingOverlay = document.getElementById('appLoadingOverlay');
@@ -112,8 +115,8 @@ if (typeof window !== 'undefined') {
   window.__setGpuEnabled = (v) => onGpuToggleChange(v);
   window.__getStaticZoom = () => staticZoom;
   window.__setStaticZoom = (z) => setStaticZoom(z);
-  window.__getStaticPan = () => staticPanRatio;
-  window.__setStaticPan = (p) => setStaticPan(p);
+  window.__getStaticPan = () => ({ x: staticPanX, y: staticPanY });
+  window.__setStaticPan = (x, y) => setStaticPan(x, y);
   window.__isIOS = isIOS;
   window.__checkIsIOS = checkIsIOS;
   window.__setIsIOS = (v) => { mockIsIOS = v; };
@@ -854,13 +857,19 @@ function updateStaticZoomUi() {
     btnStaticZoomIn.disabled = staticZoom >= 4.0;
   }
   if (btnStaticPanLeft) {
-    btnStaticPanLeft.disabled = staticZoom <= 1.0 || staticPanRatio <= -0.98;
+    btnStaticPanLeft.disabled = staticZoom <= 1.0 || staticPanX <= -0.98;
   }
   if (btnStaticPanRight) {
-    btnStaticPanRight.disabled = staticZoom <= 1.0 || staticPanRatio >= 0.98;
+    btnStaticPanRight.disabled = staticZoom <= 1.0 || staticPanX >= 0.98;
+  }
+  if (btnStaticPanUp) {
+    btnStaticPanUp.disabled = staticZoom <= 1.0 || staticPanY <= -0.98;
+  }
+  if (btnStaticPanDown) {
+    btnStaticPanDown.disabled = staticZoom <= 1.0 || staticPanY >= 0.98;
   }
   if (btnStaticPanCenter) {
-    btnStaticPanCenter.disabled = staticZoom <= 1.0 || Math.abs(staticPanRatio) < 0.02;
+    btnStaticPanCenter.disabled = staticZoom <= 1.0 || (Math.abs(staticPanX) < 0.02 && Math.abs(staticPanY) < 0.02);
   }
   staticZoomPresets.forEach((btn) => {
     const z = parseFloat(btn.dataset.zoom);
@@ -884,11 +893,13 @@ function renderStaticZoomedFrame() {
 
   // Maximum pan travel in source pixels
   const maxPanX = (origW - cropW) / 2;
-  const panPxX = staticPanRatio * maxPanX;
+  const maxPanY = (origH - cropH) / 2;
+  const panPxX = staticPanX * maxPanX;
+  const panPxY = staticPanY * maxPanY;
 
   // Source crop rectangle
   const sx = Math.max(0, Math.min(origW - cropW, (origW - cropW) / 2 + panPxX));
-  const sy = Math.max(0, (origH - cropH) / 2);
+  const sy = Math.max(0, Math.min(origH - cropH, (origH - cropH) / 2 + panPxY));
 
   // Target canvas dimensions (max 1080px)
   const maxDim = 1080;
@@ -930,16 +941,19 @@ function setStaticZoom(newZoom) {
   if (clamped === staticZoom) return;
   staticZoom = clamped;
   if (staticZoom <= 1.0) {
-    staticPanRatio = 0.0;
+    staticPanX = 0.0;
+    staticPanY = 0.0;
   }
   renderStaticZoomedFrame();
 }
 
-function setStaticPan(newPanRatio) {
+function setStaticPan(newPanX, newPanY) {
   if (staticZoom <= 1.0) return;
-  const clamped = Math.max(-1.0, Math.min(1.0, Math.round(newPanRatio * 100) / 100));
-  if (clamped === staticPanRatio) return;
-  staticPanRatio = clamped;
+  const clampedX = Math.max(-1.0, Math.min(1.0, Math.round(newPanX * 100) / 100));
+  const clampedY = Math.max(-1.0, Math.min(1.0, Math.round((newPanY !== undefined ? newPanY : staticPanY) * 100) / 100));
+  if (clampedX === staticPanX && clampedY === staticPanY) return;
+  staticPanX = clampedX;
+  staticPanY = clampedY;
   renderStaticZoomedFrame();
 }
 
@@ -964,7 +978,8 @@ async function loadStaticImage(url) {
 
   // Reset zoom & pan to default on new image load
   staticZoom = 1.0;
-  staticPanRatio = 0.0;
+  staticPanX = 0.0;
+  staticPanY = 0.0;
   if (staticZoomControls) staticZoomControls.style.display = 'flex';
   updateStaticZoomUi();
 
@@ -1157,17 +1172,27 @@ btnNextSample.addEventListener('click', () => {
 // Static Zoom and Pan Button Listeners
 btnStaticPanLeft?.addEventListener('click', (e) => {
   e.stopPropagation();
-  setStaticPan(staticPanRatio - 0.25);
+  setStaticPan(staticPanX - 0.25, staticPanY);
 });
 
 btnStaticPanRight?.addEventListener('click', (e) => {
   e.stopPropagation();
-  setStaticPan(staticPanRatio + 0.25);
+  setStaticPan(staticPanX + 0.25, staticPanY);
+});
+
+btnStaticPanUp?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setStaticPan(staticPanX, staticPanY - 0.25);
+});
+
+btnStaticPanDown?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setStaticPan(staticPanX, staticPanY + 0.25);
 });
 
 btnStaticPanCenter?.addEventListener('click', (e) => {
   e.stopPropagation();
-  setStaticPan(0.0);
+  setStaticPan(0.0, 0.0);
 });
 
 btnStaticZoomIn?.addEventListener('click', (e) => {
@@ -1193,14 +1218,20 @@ staticZoomPresets.forEach((btn) => {
 // Keyboard shortcuts for static zoom and pan
 window.addEventListener('keydown', (e) => {
   if (activeMode !== 'static') return;
-  if (e.target.closest('textarea, input, select')) return;
+  if (e.target?.closest?.('textarea, input, select')) return;
 
   if (e.key === 'ArrowLeft') {
     e.preventDefault();
-    setStaticPan(staticPanRatio - 0.20);
+    setStaticPan(staticPanX - 0.20, staticPanY);
   } else if (e.key === 'ArrowRight') {
     e.preventDefault();
-    setStaticPan(staticPanRatio + 0.20);
+    setStaticPan(staticPanX + 0.20, staticPanY);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    setStaticPan(staticPanX, staticPanY - 0.20);
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    setStaticPan(staticPanX, staticPanY + 0.20);
   } else if (e.key === '+' || e.key === '=') {
     e.preventDefault();
     setStaticZoom(staticZoom + 0.5);
@@ -1209,7 +1240,7 @@ window.addEventListener('keydown', (e) => {
     setStaticZoom(staticZoom - 0.5);
   } else if (e.key === '0' || e.key === 'Home') {
     e.preventDefault();
-    setStaticPan(0.0);
+    setStaticPan(0.0, 0.0);
     setStaticZoom(1.0);
   }
 });

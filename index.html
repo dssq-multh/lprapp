@@ -225,11 +225,15 @@
             <!-- Static Image Simulation Controls (Zoom & Pan) -->
             <div id="staticZoomControls" class="static-zoom-controls" style="display:none;" role="toolbar" aria-label="Static Image Zoom and Pan Controls">
               <div class="zoom-btn-group">
-                <button id="btnStaticPanLeft" class="zoom-ctrl-btn" title="Move Left (Pan Left) [←]">
+                <button id="btnStaticPanLeft" class="zoom-ctrl-btn zoom-btn-icon" title="Move Left (Pan Left) [←]">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <polyline points="15 18 9 12 15 6"></polyline>
                   </svg>
-                  <span>Left</span>
+                </button>
+                <button id="btnStaticPanUp" class="zoom-ctrl-btn zoom-btn-icon" title="Move Up (Pan Up) [↑]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="18 15 12 9 6 15"></polyline>
+                  </svg>
                 </button>
                 <button id="btnStaticPanCenter" class="zoom-ctrl-btn zoom-btn-icon" title="Reset Pan to Center [0]">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -237,8 +241,12 @@
                     <path d="M12 3v3m0 12v3M3 12h3m12 0h3"></path>
                   </svg>
                 </button>
-                <button id="btnStaticPanRight" class="zoom-ctrl-btn" title="Move Right (Pan Right) [→]">
-                  <span>Right</span>
+                <button id="btnStaticPanDown" class="zoom-ctrl-btn zoom-btn-icon" title="Move Down (Pan Down) [↓]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+                <button id="btnStaticPanRight" class="zoom-ctrl-btn zoom-btn-icon" title="Move Right (Pan Right) [→]">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <polyline points="9 18 15 12 9 6"></polyline>
                   </svg>
