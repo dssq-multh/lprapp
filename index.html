@@ -8,8 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/lprapp/assets/index-w6T6Lo4Y.js"></script>
-    <link rel="stylesheet" crossorigin href="/lprapp/assets/index-DHobaz2S.css">
+    <script type="module" crossorigin src="/lprapp/assets/index-CnsQkRbq.js"></script>
+    <link rel="stylesheet" crossorigin href="/lprapp/assets/index-DMX9GDUR.css">
   </head>
   <body>
     <div id="app">
@@ -57,7 +57,7 @@
             
             <!-- Prominent action bar next to the textarea -->
             <div class="plate-action-bar">
-              <button id="btnRecognize" class="btn btn-primary btn-recognize" title="Start Camera and Plate Recognition">
+              <button id="btnRecognize" class="btn btn-primary btn-recognize" title="Start Camera and Plate Recognition" disabled>
                 <span class="btn-icon">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                     <circle cx="12" cy="12" r="3" />
@@ -219,8 +219,64 @@
             </button>
           </div>
         </section>
-
       </main>
+    </div>
+
+    <!-- Global Component Loading Overlay (YOLO + PaddleOCR) -->
+    <div id="appLoadingOverlay" class="app-loading-overlay">
+      <div class="loading-modal">
+        <div class="loading-logo-wrap">
+          <div class="loading-pulse-ring"></div>
+          <div class="loading-icon-badge">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+              <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+              <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6" />
+              <circle cx="16.5" cy="7.5" r="2.5" fill="#10b981" stroke="none" />
+            </svg>
+          </div>
+        </div>
+
+        <h2 class="loading-title">Initializing ALPR Engine</h2>
+        <p class="loading-subtitle">Loading in-browser neural networks into Web Worker...</p>
+
+        <!-- Components checklist -->
+        <div class="loading-components">
+          <div id="compItemYolo" class="comp-item loading">
+            <div class="comp-status-icon">
+              <span class="comp-spinner"></span>
+              <span class="comp-check">✓</span>
+            </div>
+            <div class="comp-info">
+              <div class="comp-name">YOLOv5n-OBB Detector</div>
+              <div class="comp-desc" id="compDescYolo">Loading license plate detector...</div>
+            </div>
+          </div>
+
+          <div id="compItemPaddle" class="comp-item pending">
+            <div class="comp-status-icon">
+              <span class="comp-spinner"></span>
+              <span class="comp-check">✓</span>
+            </div>
+            <div class="comp-info">
+              <div class="comp-name">PaddleOCR Engine</div>
+              <div class="comp-desc" id="compDescPaddle">Waiting for detector...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live status bar -->
+        <div class="loading-status-bar">
+          <span class="loading-status-spinner"></span>
+          <span id="loadingStatusText">Configuring runtime...</span>
+        </div>
+
+        <!-- Optional Error / Fallback Box if loading fails -->
+        <div id="loadingErrorBox" class="loading-error-box" style="display: none;">
+          <p id="loadingErrorMsg">Initialization error</p>
+          <button id="btnDismissLoadingOverlay" class="btn btn-secondary btn-sm">Dismiss & Continue</button>
+        </div>
+      </div>
     </div>
 
   </body>
