@@ -5,7 +5,6 @@ import { fitFrameToMax1080 } from './lpr/engine.js';
 const engineStatusBadge = document.getElementById('engineStatusBadge');
 const engineStatusText = document.getElementById('engineStatusText');
 const platesTextarea = document.getElementById('platesTextarea');
-const plateCountBadge = document.getElementById('plateCountBadge');
 const btnRecognize = document.getElementById('btnRecognize');
 const btnRecognizeText = document.getElementById('btnRecognizeText');
 
@@ -140,8 +139,7 @@ function updateTargetPlates() {
     }
   }
 
-  const count = targetPlates.size;
-  plateCountBadge.textContent = `${count} ${count === 1 ? 'plate' : 'plates'}`;
+
 }
 
 /**
