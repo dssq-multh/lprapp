@@ -37,6 +37,17 @@ const rightPanel = document.querySelector('.right-panel');
 const gpuToggle = document.getElementById('gpuToggle');
 const gpuToggleToolbar = document.getElementById('gpuToggleToolbar');
 
+// Global Loading Overlay Elements (YOLO + PaddleOCR)
+const appLoadingOverlay = document.getElementById('appLoadingOverlay');
+const compItemYolo = document.getElementById('compItemYolo');
+const compDescYolo = document.getElementById('compDescYolo');
+const compItemPaddle = document.getElementById('compItemPaddle');
+const compDescPaddle = document.getElementById('compDescPaddle');
+const loadingStatusText = document.getElementById('loadingStatusText');
+const loadingErrorBox = document.getElementById('loadingErrorBox');
+const loadingErrorMsg = document.getElementById('loadingErrorMsg');
+const btnDismissLoadingOverlay = document.getElementById('btnDismissLoadingOverlay');
+
 // iOS detection (iPhone, iPod, iPad including iPadOS desktop UA)
 export const isIOS = typeof navigator !== 'undefined' && (
   /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
@@ -1105,6 +1116,71 @@ updateGpuUi(isGpuEnabled);
 gpuToggle?.addEventListener('change', (e) => onGpuToggleChange(e.target.checked));
 gpuToggleToolbar?.addEventListener('change', (e) => onGpuToggleChange(e.target.checked));
 
+// Global Loading Overlay Controller
+function updateLoadingStatus(status) {
+  if (!loadingStatusText) return;
+  const text = typeof status === 'string' ? status : (status?.text || JSON.stringify(status));
+  loadingStatusText.textContent = text;
+
+  const lower = text.toLowerCase();
+  if (lower.includes('yolo') || lower.includes('spotter') || lower.includes('detector') || lower.includes('webassembly') || lower.includes('runtime')) {
+    if (compItemYolo) compItemYolo.className = 'comp-item loading';
+    if (compDescYolo) compDescYolo.textContent = text;
+  } else if (lower.includes('paddle') || lower.includes('ocr')) {
+    if (compItemYolo) compItemYolo.className = 'comp-item ready';
+    if (compDescYolo) compDescYolo.textContent = 'Detector Ready (1 CPU)';
+    if (compItemPaddle) compItemPaddle.className = 'comp-item loading';
+    if (compDescPaddle) compDescPaddle.textContent = text;
+  } else if (lower.includes('ready') || lower.includes('done')) {
+    if (compItemYolo) compItemYolo.className = 'comp-item ready';
+    if (compDescYolo) compDescYolo.textContent = 'Detector Ready';
+    if (compItemPaddle) compItemPaddle.className = 'comp-item ready';
+    if (compDescPaddle) compDescPaddle.textContent = 'PP-OCRv6 Engine Ready';
+  }
+}
+
+function hideLoadingOverlay() {
+  if (!appLoadingOverlay) return;
+  if (compItemYolo) {
+    compItemYolo.className = 'comp-item ready';
+    if (compDescYolo) compDescYolo.textContent = 'Detector Ready';
+  }
+  if (compItemPaddle) {
+    compItemPaddle.className = 'comp-item ready';
+    if (compDescPaddle) compDescPaddle.textContent = 'PP-OCRv6 Engine Ready';
+  }
+  if (loadingStatusText) {
+    loadingStatusText.textContent = 'All components loaded!';
+  }
+
+  // Brief pause so user sees both green checks, then smooth fade-out
+  setTimeout(() => {
+    appLoadingOverlay.classList.add('hidden');
+    setTimeout(() => {
+      appLoadingOverlay.style.display = 'none';
+    }, 450);
+  }, 400);
+}
+
+function showLoadingError(errMessage) {
+  if (loadingErrorBox && loadingErrorMsg) {
+    loadingErrorMsg.textContent = `Initialization note: ${errMessage}`;
+    loadingErrorBox.style.display = 'block';
+  }
+  if (loadingStatusText) {
+    loadingStatusText.textContent = 'Engine initialization note';
+  }
+}
+
+btnDismissLoadingOverlay?.addEventListener('click', () => {
+  if (appLoadingOverlay) {
+    appLoadingOverlay.classList.add('hidden');
+    setTimeout(() => {
+      appLoadingOverlay.style.display = 'none';
+    }, 450);
+  }
+});
+
 // Initialization
 async function initApp() {
   // Prepopulate sample plates so user gets immediate visual feedback
@@ -1115,7 +1191,8 @@ async function initApp() {
 
   try {
     await engine.init((status) => {
-      engineStatusText.textContent = status;
+      engineStatusText.textContent = typeof status === 'string' ? status : (status?.text || '');
+      updateLoadingStatus(status);
     });
     if (typeof engine.enableGpu === 'boolean' && engine.enableGpu !== isGpuEnabled) {
       isGpuEnabled = engine.enableGpu;
@@ -1124,10 +1201,13 @@ async function initApp() {
     }
     engineStatusBadge.className = 'status-badge ready';
     engineStatusText.textContent = `Models Ready (${isGpuEnabled ? 'WebGPU' : 'WASM'})`;
+
+    hideLoadingOverlay();
   } catch (err) {
     console.error('Failed to initialize engine:', err);
     engineStatusBadge.className = 'status-badge ready';
     engineStatusText.textContent = 'Wasm Ready (On-Demand)';
+    showLoadingError(err.message || String(err));
   }
 }
 
