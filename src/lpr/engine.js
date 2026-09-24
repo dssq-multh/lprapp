@@ -3,6 +3,9 @@ import { PaddleOCR } from '@paddleocr/paddleocr-js';
 import { letterbox, unletterboxQuad } from './preprocess.js';
 import { decodeSpotter } from './decoder_spotter.js';
 
+// Explicitly limit ONNX Runtime WebAssembly execution to strictly 1 CPU thread
+ort.env.wasm.numThreads = 1;
+
 const SPOT_W = 416, SPOT_H = 256;
 const TILE_W = 384, TILE_H = 240, OVERLAP = 0.25;
 
@@ -199,8 +202,10 @@ export class LprEngine {
     const wasmSession = await ort.InferenceSession.create(spotterUrl, {
       executionProviders: ['wasm'],
       graphOptimizationLevel: 'disabled',
+      intraOpNumThreads: 1,
+      interOpNumThreads: 1,
     });
-    console.log('YOLOv5n-OBB initialized on WASM');
+    console.log('YOLOv5n-OBB initialized on WASM (1 CPU)');
     return { session: wasmSession, enableGpu: false };
   }
 
@@ -235,14 +240,10 @@ export class LprEngine {
 
     const baseUrl = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '') + '/';
 
-    if (onStatus) onStatus('Configuring WebAssembly runtime...');
+    if (onStatus) onStatus('Configuring WebAssembly runtime (1 CPU)...');
     ort.env.wasm.wasmPaths = `${baseUrl}ort-wasm/`;
-    const isCrossOriginIsolated = typeof crossOriginIsolated !== 'undefined'
-      ? crossOriginIsolated
-      : (typeof self !== 'undefined' && Boolean(self.crossOriginIsolated));
-    if (!isCrossOriginIsolated) {
-      ort.env.wasm.numThreads = 1;
-    }
+    // Explicitly restrict ONNX Runtime WASM runtime to 1 CPU thread
+    ort.env.wasm.numThreads = 1;
 
     const providerName = this.enableGpu ? 'WebGPU' : 'WASM';
     if (onStatus) onStatus(`Loading license plate detector (YOLOv5n-OBB on ${providerName})...`);
@@ -250,7 +251,7 @@ export class LprEngine {
     this.spotter = session;
     this.enableGpu = enableGpu;
 
-    if (onStatus) onStatus('Initializing PaddleOCR Wasm engine...');
+    if (onStatus) onStatus('Initializing PaddleOCR Wasm engine (1 CPU)...');
     try {
       this.paddleOcr = await PaddleOCR.create({
         textDetectionModelName: 'PP-OCRv6_tiny_det',
@@ -259,7 +260,8 @@ export class LprEngine {
         textRecognitionModelAsset: { url: `${baseUrl}models/PP-OCRv6_tiny_rec_onnx_infer.tar` },
         ortOptions: {
           backend: 'wasm',
-          wasmPaths: `${baseUrl}ort-wasm/`
+          wasmPaths: `${baseUrl}ort-wasm/`,
+          numThreads: 1
         }
       });
       console.log('PaddleOCR Wasm engine ready!');
