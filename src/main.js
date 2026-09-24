@@ -34,6 +34,17 @@ const rightPanel = document.querySelector('.right-panel');
 const gpuToggle = document.getElementById('gpuToggle');
 const gpuToggleToolbar = document.getElementById('gpuToggleToolbar');
 
+// iOS detection (iPhone, iPod, iPad including iPadOS desktop UA)
+export const isIOS = typeof navigator !== 'undefined' && (
+  /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+);
+let mockIsIOS = null;
+export function checkIsIOS() {
+  if (mockIsIOS !== null) return mockIsIOS;
+  return isIOS;
+}
+
 // State
 const STORAGE_KEY_GPU = 'alpr_enable_gpu';
 // Off by default unless explicitly saved as 'true' in localStorage
@@ -66,6 +77,9 @@ if (typeof window !== 'undefined') {
   };
   window.__getGpuEnabled = () => isGpuEnabled;
   window.__setGpuEnabled = (v) => onGpuToggleChange(v);
+  window.__isIOS = isIOS;
+  window.__checkIsIOS = checkIsIOS;
+  window.__setIsIOS = (v) => { mockIsIOS = v; };
 }
 let isStreaming = false;
 let mediaStream = null;
@@ -484,7 +498,13 @@ async function processCurrentFrame() {
     // sleep 1000ms after each frame to avoid burning CPU when inactive.
     // Otherwise, sleep 2x detection latency (33% compute / 67% rest).
     const isIdle = (now - lastDetectionFoundTime) >= 3000;
-    const sleepMs = isIdle ? 1000 : (latency * 2);
+    let sleepMs = isIdle ? 1000 : (latency * 2);
+
+    // Only for iOS, enforce a minimum sleep of 2s between detections to keep device cool and prevent WebKit watchdog kills
+    if (checkIsIOS()) {
+      sleepMs = Math.max(sleepMs, 2000);
+    }
+
     nextAllowedFrameTime = now + sleepMs;
   }
 }
