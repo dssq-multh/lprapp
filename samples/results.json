@@ -5,7 +5,7 @@
     "groundTruth": [
       "CAL8942"
     ],
-    "durationMs": 358,
+    "durationMs": 205,
     "detections": [
       {
         "text": "CAL8942",
@@ -28,7 +28,7 @@
     "groundTruth": [
       "B391KLT"
     ],
-    "durationMs": 231,
+    "durationMs": 147,
     "detections": [
       {
         "text": "B39IKLT",
@@ -66,7 +66,7 @@
       "SMJ6650C",
       "SBU999J"
     ],
-    "durationMs": 289,
+    "durationMs": 156,
     "detections": [
       {
         "text": "6S8H",
@@ -103,7 +103,7 @@
       "SMJ6650C",
       "ES3960A"
     ],
-    "durationMs": 212,
+    "durationMs": 137,
     "detections": [
       {
         "text": "SMJ6650C",
@@ -142,7 +142,7 @@
       "SNF9945S",
       "SLX9361E"
     ],
-    "durationMs": 176,
+    "durationMs": 172,
     "detections": [
       {
         "text": "SML6579R",
@@ -168,7 +168,7 @@
       "SKG516L",
       "SLX9361E"
     ],
-    "durationMs": 210,
+    "durationMs": 172,
     "detections": [
       {
         "text": "ES396OA",
@@ -231,7 +231,7 @@
       "SNF9945S",
       "SKG516L"
     ],
-    "durationMs": 132,
+    "durationMs": 125,
     "detections": [
       {
         "text": "SNF9945S",
@@ -269,7 +269,7 @@
       "SNF5763B",
       "SMK8800G"
     ],
-    "durationMs": 116,
+    "durationMs": 106,
     "detections": [
       {
         "text": "SJV7999M",
@@ -292,7 +292,7 @@
     "groundTruth": [
       "SLE5647H"
     ],
-    "durationMs": 144,
+    "durationMs": 106,
     "detections": [
       {
         "text": "SLE5647H",
@@ -317,7 +317,7 @@
       "SNY9977A",
       "SMU5178Z"
     ],
-    "durationMs": 147,
+    "durationMs": 131,
     "detections": [
       {
         "text": "SNY9977A",
@@ -367,7 +367,7 @@
       "SJS561D",
       "SND33T"
     ],
-    "durationMs": 134,
+    "durationMs": 121,
     "detections": [
       {
         "text": "SJS561D",
@@ -403,7 +403,7 @@
     "groundTruth": [
       "SND33T"
     ],
-    "durationMs": 331,
+    "durationMs": 105,
     "detections": [
       {
         "text": "SND33T",
@@ -429,7 +429,7 @@
       "SMZ7912G",
       "SNX6148B"
     ],
-    "durationMs": 509,
+    "durationMs": 149,
     "detections": [
       {
         "text": "13SLK5331L",
@@ -480,7 +480,7 @@
       "SMZ6023D",
       "SNA4496E"
     ],
-    "durationMs": 575,
+    "durationMs": 135,
     "detections": [
       {
         "text": "65T6L",
@@ -530,7 +530,7 @@
       "SNC5016R",
       "SMK4973D"
     ],
-    "durationMs": 430,
+    "durationMs": 124,
     "detections": [
       {
         "text": "SNX155",
@@ -567,7 +567,7 @@
       "SBR8808R",
       "SND33T"
     ],
-    "durationMs": 464,
+    "durationMs": 397,
     "detections": [
       {
         "text": "SND33T",
@@ -604,7 +604,7 @@
       "SBR8808R",
       "SNN5085H"
     ],
-    "durationMs": 508,
+    "durationMs": 453,
     "detections": [
       {
         "text": "SNN5085H",

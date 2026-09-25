@@ -8,8 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/lprapp/assets/index-C0-D_ZdF.js"></script>
-    <link rel="stylesheet" crossorigin href="/lprapp/assets/index-B0GXoniN.css">
+    <script type="module" crossorigin src="/lprapp/assets/index-Ia30AsVl.js"></script>
+    <link rel="stylesheet" crossorigin href="/lprapp/assets/index-CnygMzl-.css">
   </head>
   <body>
     <div id="app">
@@ -206,6 +206,14 @@
               <span class="pulsing-record-dot"></span>
               <span id="streamBadgeText">LIVE RECOGNIZING</span>
             </div>
+
+            <!-- Resume Camera Feed Floating Button (when camera feed is frozen by user tap) -->
+            <button id="btnResumeCamera" class="resume-camera-btn" style="display:none;" aria-label="Resume camera feed">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Resume camera feed</span>
+            </button>
 
             <!-- Floating Pinch-to-Zoom Indicator Badge -->
             <div id="zoomBadge" class="zoom-badge" style="display:none;">
