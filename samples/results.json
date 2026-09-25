@@ -5,17 +5,17 @@
     "groundTruth": [
       "CAL8942"
     ],
-    "durationMs": 239,
+    "durationMs": 358,
     "detections": [
       {
         "text": "CAL8942",
-        "score": 0.78,
-        "minConf": 0.91,
+        "score": 0.79,
+        "minConf": 0.92,
         "box": {
-          "left": 646.6826705932617,
-          "top": 267.977502822876,
-          "width": 243.75898361206055,
-          "height": 83.39586067199707
+          "left": 650.2700757980347,
+          "top": 271.4287462234497,
+          "width": 236.88708686828613,
+          "height": 75.09617042541504
         },
         "isMatch": true,
         "matchedPlate": "CAL8942"
@@ -28,20 +28,33 @@
     "groundTruth": [
       "B391KLT"
     ],
-    "durationMs": 141,
+    "durationMs": 231,
     "detections": [
       {
         "text": "B39IKLT",
-        "score": 0.71,
-        "minConf": 0.87,
+        "score": 0.74,
+        "minConf": 0.89,
         "box": {
-          "left": 468.19738483428955,
-          "top": 428.3703918457031,
-          "width": 143.61264610290527,
-          "height": 50.90123748779297
+          "left": 475.9105854034424,
+          "top": 435.5754060745239,
+          "width": 131.5883331298828,
+          "height": 36.1919002532959
         },
         "isMatch": true,
         "matchedPlate": "B391KLT"
+      },
+      {
+        "text": "GEE",
+        "score": 0.33,
+        "minConf": 0.6,
+        "box": {
+          "left": 877.4203834533691,
+          "top": 308.8698306083679,
+          "width": 39.22943115234375,
+          "height": 11.840901374816895
+        },
+        "isMatch": false,
+        "matchedPlate": null
       }
     ]
   },
@@ -53,20 +66,33 @@
       "SMJ6650C",
       "SBU999J"
     ],
-    "durationMs": 141,
+    "durationMs": 289,
     "detections": [
       {
-        "text": "SON66T8H",
-        "score": 0.68,
-        "minConf": 0.76,
+        "text": "6S8H",
+        "score": 0.65,
+        "minConf": 0.6,
         "box": {
-          "left": 251.2324333190918,
-          "top": 348.1724796295166,
-          "width": 42.4515323638916,
-          "height": 27.80342674255371
+          "left": 251.94439888000488,
+          "top": 351.8591866493225,
+          "width": 40.24961471557617,
+          "height": 25.49318218231201
         },
         "isMatch": false,
         "matchedPlate": null
+      },
+      {
+        "text": "SBU999J",
+        "score": 0.6,
+        "minConf": 0.78,
+        "box": {
+          "left": 764.6270656585693,
+          "top": 348.8444437980652,
+          "width": 52.996192932128906,
+          "height": 23.589131355285645
+        },
+        "isMatch": true,
+        "matchedPlate": "SBU999J"
       }
     ]
   },
@@ -77,20 +103,33 @@
       "SMJ6650C",
       "ES3960A"
     ],
-    "durationMs": 132,
+    "durationMs": 212,
     "detections": [
       {
-        "text": "SMJ665OC",
-        "score": 0.62,
+        "text": "SMJ6650C",
+        "score": 0.65,
         "minConf": 0.82,
         "box": {
-          "left": 514.3843030929565,
-          "top": 237.50142431259155,
-          "width": 78.96143531799316,
-          "height": 29.848557472229004
+          "left": 515.314621925354,
+          "top": 243.53423166275024,
+          "width": 80.17607688903809,
+          "height": 20.79817485809326
         },
         "isMatch": true,
         "matchedPlate": "SMJ6650C"
+      },
+      {
+        "text": "SML",
+        "score": 0.4,
+        "minConf": 0.76,
+        "box": {
+          "left": 1042.9208850860596,
+          "top": 313.7861394882202,
+          "width": 30.324016571044922,
+          "height": 23.020872116088867
+        },
+        "isMatch": false,
+        "matchedPlate": null
       }
     ]
   },
@@ -103,17 +142,17 @@
       "SNF9945S",
       "SLX9361E"
     ],
-    "durationMs": 141,
+    "durationMs": 176,
     "detections": [
       {
         "text": "SML6579R",
-        "score": 0.7,
-        "minConf": 0.88,
+        "score": 0.72,
+        "minConf": 0.89,
         "box": {
-          "left": 564.8339252471924,
-          "top": 329.7433090209961,
-          "width": 111.08331298828125,
-          "height": 38.81059455871582
+          "left": 562.6772232055664,
+          "top": 336.0988440513611,
+          "width": 112.44554901123047,
+          "height": 29.960824012756348
         },
         "isMatch": true,
         "matchedPlate": "SML6579R"
@@ -129,30 +168,56 @@
       "SKG516L",
       "SLX9361E"
     ],
-    "durationMs": 161,
+    "durationMs": 210,
     "detections": [
       {
         "text": "ES396OA",
-        "score": 0.69,
-        "minConf": 0.84,
+        "score": 0.68,
+        "minConf": 0.85,
         "box": {
-          "left": 331.2622675895691,
-          "top": 309.6473922729492,
-          "width": 71.30158710479736,
-          "height": 28.01297378540039
+          "left": 329.27688789367676,
+          "top": 313.78405380249023,
+          "width": 73.20545768737793,
+          "height": 21.702255249023438
         },
         "isMatch": true,
         "matchedPlate": "ES3960A"
       },
       {
-        "text": "SNF9945S",
-        "score": 0.53,
+        "text": "3E",
+        "score": 0.57,
+        "minConf": 0.6,
+        "box": {
+          "left": 68.3238297700882,
+          "top": 219.2311134338379,
+          "width": 32.92392039299011,
+          "height": 15.985570907592773
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      },
+      {
+        "text": "SKG56L",
+        "score": 0.54,
         "minConf": 0.81,
         "box": {
-          "left": 653.7589387893677,
-          "top": 274.7315068244934,
-          "width": 59.8564510345459,
-          "height": 30.08972454071045
+          "left": 908.2350769042969,
+          "top": 281.1709842681885,
+          "width": 36.73505401611328,
+          "height": 15.56209945678711
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      },
+      {
+        "text": "SNF9945S",
+        "score": 0.36,
+        "minConf": 0.74,
+        "box": {
+          "left": 653.58775806427,
+          "top": 281.0144419670105,
+          "width": 55.47311210632324,
+          "height": 18.473381996154785
         },
         "isMatch": true,
         "matchedPlate": "SNF9945S"
@@ -166,30 +231,30 @@
       "SNF9945S",
       "SKG516L"
     ],
-    "durationMs": 137,
+    "durationMs": 132,
     "detections": [
       {
         "text": "SNF9945S",
-        "score": 0.66,
+        "score": 0.65,
         "minConf": 0.86,
         "box": {
-          "left": 271.21689462661743,
-          "top": 303.6825113296509,
-          "width": 106.82349300384521,
-          "height": 43.881643295288086
+          "left": 268.3683114051819,
+          "top": 301.6887888908386,
+          "width": 124.80715084075928,
+          "height": 46.15429401397705
         },
         "isMatch": true,
         "matchedPlate": "SNF9945S"
       },
       {
         "text": "SKG5I6L",
-        "score": 0.64,
-        "minConf": 0.84,
+        "score": 0.63,
+        "minConf": 0.83,
         "box": {
-          "left": 712.9540214538574,
-          "top": 284.32521057128906,
-          "width": 54.87609100341797,
-          "height": 29.382471084594727
+          "left": 715.0515775680542,
+          "top": 289.69577407836914,
+          "width": 48.27147102355957,
+          "height": 20.5894775390625
         },
         "isMatch": true,
         "matchedPlate": "SKG516L"
@@ -204,17 +269,17 @@
       "SNF5763B",
       "SMK8800G"
     ],
-    "durationMs": 118,
+    "durationMs": 116,
     "detections": [
       {
         "text": "SJV7999M",
-        "score": 0.56,
-        "minConf": 0.62,
+        "score": 0.68,
+        "minConf": 0.68,
         "box": {
-          "left": 413.67960691452026,
-          "top": 323.11545038223267,
-          "width": 83.86781787872314,
-          "height": 45.59311580657959
+          "left": 419.53258180618286,
+          "top": 328.92363452911377,
+          "width": 72.31729030609131,
+          "height": 34.67630195617676
         },
         "isMatch": true,
         "matchedPlate": "SJV7999M"
@@ -227,17 +292,17 @@
     "groundTruth": [
       "SLE5647H"
     ],
-    "durationMs": 119,
+    "durationMs": 144,
     "detections": [
       {
         "text": "SLE5647H",
         "score": 0.7,
         "minConf": 0.88,
         "box": {
-          "left": 337.35756826400757,
-          "top": 363.28577041625977,
-          "width": 155.0564432144165,
-          "height": 59.5799560546875
+          "left": 337.5470824241638,
+          "top": 368.1426887512207,
+          "width": 150.64189624786377,
+          "height": 49.1612606048584
         },
         "isMatch": true,
         "matchedPlate": "SLE5647H"
@@ -252,33 +317,46 @@
       "SNY9977A",
       "SMU5178Z"
     ],
-    "durationMs": 132,
+    "durationMs": 147,
     "detections": [
       {
         "text": "SNY9977A",
-        "score": 0.67,
+        "score": 0.62,
         "minConf": 0.81,
         "box": {
-          "left": 358.9273180961609,
-          "top": 299.67642402648926,
-          "width": 69.42807483673096,
-          "height": 32.10066032409668
+          "left": 356.9573493003845,
+          "top": 303.0886187553406,
+          "width": 69.71986484527588,
+          "height": 24.98690128326416
         },
         "isMatch": true,
         "matchedPlate": "SNY9977A"
       },
       {
         "text": "SMU5178Z",
-        "score": 0.66,
-        "minConf": 0.86,
+        "score": 0.6,
+        "minConf": 0.8,
         "box": {
-          "left": 702.5728168487549,
-          "top": 330.3704695701599,
-          "width": 68.31800079345703,
-          "height": 32.33191394805908
+          "left": 693.2412014007568,
+          "top": 324.4249520301819,
+          "width": 84.96609878540039,
+          "height": 37.74506664276123
         },
         "isMatch": true,
         "matchedPlate": "SMU5178Z"
+      },
+      {
+        "text": "SJS561D",
+        "score": 0.35,
+        "minConf": 0.72,
+        "box": {
+          "left": 124.06928157806396,
+          "top": 278.10027551651,
+          "width": 46.956356048583984,
+          "height": 23.92814540863037
+        },
+        "isMatch": true,
+        "matchedPlate": "SJS561D"
       }
     ]
   },
@@ -289,20 +367,33 @@
       "SJS561D",
       "SND33T"
     ],
-    "durationMs": 119,
+    "durationMs": 134,
     "detections": [
       {
         "text": "SJS561D",
-        "score": 0.68,
-        "minConf": 0.86,
+        "score": 0.72,
+        "minConf": 0.88,
         "box": {
-          "left": 528.0391845703125,
-          "top": 321.77214002609253,
-          "width": 105.60140991210938,
-          "height": 51.32483768463135
+          "left": 522.4501647949219,
+          "top": 324.84712314605713,
+          "width": 114.03499603271484,
+          "height": 53.84102439880371
         },
         "isMatch": true,
         "matchedPlate": "SJS561D"
+      },
+      {
+        "text": "S033T",
+        "score": 0.5,
+        "minConf": 0.66,
+        "box": {
+          "left": 93.89123725891113,
+          "top": 247.34121322631836,
+          "width": 35.25872325897217,
+          "height": 22.341093063354492
+        },
+        "isMatch": false,
+        "matchedPlate": null
       }
     ]
   },
@@ -312,20 +403,20 @@
     "groundTruth": [
       "SND33T"
     ],
-    "durationMs": 118,
+    "durationMs": 331,
     "detections": [
       {
-        "text": "SND3T",
-        "score": 0.66,
-        "minConf": 0.84,
+        "text": "SND33T",
+        "score": 0.52,
+        "minConf": 0.72,
         "box": {
-          "left": 426.4936351776123,
-          "top": 375.88785696029663,
-          "width": 117.91601943969727,
-          "height": 62.74471378326416
+          "left": 429.6868715286255,
+          "top": 382.4908676147461,
+          "width": 140.8832302093506,
+          "height": 60.00399398803711
         },
-        "isMatch": false,
-        "matchedPlate": null
+        "isMatch": true,
+        "matchedPlate": "SND33T"
       }
     ]
   },
@@ -338,33 +429,46 @@
       "SMZ7912G",
       "SNX6148B"
     ],
-    "durationMs": 132,
+    "durationMs": 509,
     "detections": [
       {
-        "text": "SMK8837M",
+        "text": "13SLK5331L",
         "score": 0.66,
-        "minConf": 0.85,
+        "minConf": 0.73,
         "box": {
-          "left": 759.4843053817749,
-          "top": 291.22140169143677,
-          "width": 58.96995735168457,
-          "height": 28.987658500671387
+          "left": 465.16791343688965,
+          "top": 279.6885380744934,
+          "width": 41.24044418334961,
+          "height": 38.434630393981934
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      },
+      {
+        "text": "SMK8837M",
+        "score": 0.61,
+        "minConf": 0.81,
+        "box": {
+          "left": 757.0327234268188,
+          "top": 292.92381048202515,
+          "width": 65.96354484558105,
+          "height": 22.49963092803955
         },
         "isMatch": true,
         "matchedPlate": "SMK8837M"
       },
       {
-        "text": "SWZ79120",
-        "score": 0.58,
-        "minConf": 0.75,
+        "text": "SMZ7912G",
+        "score": 0.27,
+        "minConf": 0.64,
         "box": {
-          "left": 1030.052770614624,
-          "top": 246.2698917388916,
-          "width": 49.63901138305664,
-          "height": 32.30325508117676
+          "left": 1030.9237117767334,
+          "top": 251.49726390838623,
+          "width": 49.234439849853516,
+          "height": 20.646692276000977
         },
-        "isMatch": false,
-        "matchedPlate": null
+        "isMatch": true,
+        "matchedPlate": "SMZ7912G"
       }
     ]
   },
@@ -376,20 +480,46 @@
       "SMZ6023D",
       "SNA4496E"
     ],
-    "durationMs": 117,
+    "durationMs": 575,
     "detections": [
       {
-        "text": "656L",
-        "score": 0.66,
-        "minConf": 0.69,
+        "text": "65T6L",
+        "score": 0.55,
+        "minConf": 0.6,
         "box": {
-          "left": 525.5792598724365,
-          "top": 314.83079767227173,
-          "width": 36.19668960571289,
-          "height": 33.22031307220459
+          "left": 525.1513338088989,
+          "top": 323.1553874015808,
+          "width": 37.10548210144043,
+          "height": 22.81377124786377
         },
         "isMatch": false,
         "matchedPlate": null
+      },
+      {
+        "text": "CDSNA445GE",
+        "score": 0.53,
+        "minConf": 0.7,
+        "box": {
+          "left": 1035.9834823608398,
+          "top": 299.01371669769287,
+          "width": 44.092529296875,
+          "height": 22.39032554626465
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      },
+      {
+        "text": "SMZ6023D",
+        "score": 0.39,
+        "minConf": 0.75,
+        "box": {
+          "left": 891.2923049926758,
+          "top": 310.07883310317993,
+          "width": 42.66334533691406,
+          "height": 16.673666954040527
+        },
+        "isMatch": true,
+        "matchedPlate": "SMZ6023D"
       }
     ]
   },
@@ -400,17 +530,30 @@
       "SNC5016R",
       "SMK4973D"
     ],
-    "durationMs": 123,
+    "durationMs": 430,
     "detections": [
       {
         "text": "SNX155",
-        "score": 0.67,
-        "minConf": 0.87,
+        "score": 0.68,
+        "minConf": 0.84,
         "box": {
-          "left": 984.2928256988525,
-          "top": 387.4266686439514,
-          "width": 95.25609970092773,
-          "height": 39.31504726409912
+          "left": 980.7094116210938,
+          "top": 390.0179271697998,
+          "width": 99.10498809814453,
+          "height": 39.546661376953125
+        },
+        "isMatch": false,
+        "matchedPlate": null
+      },
+      {
+        "text": "SK4973D",
+        "score": 0.51,
+        "minConf": 0.71,
+        "box": {
+          "left": 16.279705703258514,
+          "top": 309.4413342475891,
+          "width": 42.77605926990509,
+          "height": 21.38803768157959
         },
         "isMatch": false,
         "matchedPlate": null
@@ -424,33 +567,33 @@
       "SBR8808R",
       "SND33T"
     ],
-    "durationMs": 138,
+    "durationMs": 464,
     "detections": [
       {
-        "text": "SBR8808R",
-        "score": 0.63,
-        "minConf": 0.8,
-        "box": {
-          "left": 720.886399269104,
-          "top": 352.5257306098938,
-          "width": 86.14680290222168,
-          "height": 57.1572904586792
-        },
-        "isMatch": true,
-        "matchedPlate": "SBR8808R"
-      },
-      {
         "text": "SND33T",
-        "score": 0.61,
+        "score": 0.7,
         "minConf": 0.79,
         "box": {
-          "left": 156.2927656173706,
-          "top": 321.29326915740967,
-          "width": 62.72692108154297,
-          "height": 36.7961311340332
+          "left": 155.67360663414001,
+          "top": 329.71767568588257,
+          "width": 61.834904193878174,
+          "height": 20.646924018859863
         },
         "isMatch": true,
         "matchedPlate": "SND33T"
+      },
+      {
+        "text": "SBR8808R",
+        "score": 0.63,
+        "minConf": 0.84,
+        "box": {
+          "left": 709.2535257339478,
+          "top": 340.01506662368774,
+          "width": 123.14037895202637,
+          "height": 71.36426067352295
+        },
+        "isMatch": true,
+        "matchedPlate": "SBR8808R"
       }
     ]
   },
@@ -461,33 +604,33 @@
       "SBR8808R",
       "SNN5085H"
     ],
-    "durationMs": 138,
+    "durationMs": 508,
     "detections": [
       {
-        "text": "SBR8808R",
-        "score": 0.66,
-        "minConf": 0.84,
-        "box": {
-          "left": 200.72737956047058,
-          "top": 375.4888987541199,
-          "width": 94.04036378860474,
-          "height": 65.622239112854
-        },
-        "isMatch": true,
-        "matchedPlate": "SBR8808R"
-      },
-      {
         "text": "SNN5085H",
-        "score": 0.66,
-        "minConf": 0.85,
+        "score": 0.59,
+        "minConf": 0.83,
         "box": {
-          "left": 689.7541666030884,
-          "top": 333.60160875320435,
-          "width": 98.07610130310059,
-          "height": 46.07431697845459
+          "left": 680.9424018859863,
+          "top": 341.20227241516113,
+          "width": 108.02368927001953,
+          "height": 33.22275924682617
         },
         "isMatch": true,
         "matchedPlate": "SNN5085H"
+      },
+      {
+        "text": "SBR8808R",
+        "score": 0.51,
+        "minConf": 0.77,
+        "box": {
+          "left": 194.43116426467896,
+          "top": 375.0180230140686,
+          "width": 109.41623210906982,
+          "height": 66.64443111419678
+        },
+        "isMatch": true,
+        "matchedPlate": "SBR8808R"
       }
     ]
   }
