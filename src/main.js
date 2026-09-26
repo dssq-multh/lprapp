@@ -20,6 +20,7 @@ const btnIdleStart = document.getElementById('btnIdleStart');
 const btnIdleSample = document.getElementById('btnIdleSample');
 const streamBadge = document.getElementById('streamBadge');
 const streamBadgeText = document.getElementById('streamBadgeText');
+const btnResumeCamera = document.getElementById('btnResumeCamera');
 const btnTapToDetect = document.getElementById('btnTapToDetect');
 const btnTapToDetectText = document.getElementById('btnTapToDetectText');
 const scanFpsText = document.getElementById('scanFpsText');
@@ -91,11 +92,12 @@ const engine = new LprEngine({
   base: (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '') + '/lpr/',
   enableGpu: isGpuEnabled
 });
+const DEFAULT_CAMERA_ZOOM = 1.5;
 let activeVideoTrack = null;
 let zoomCapabilities = null;
-let currentZoom = 1.0;
+let currentZoom = DEFAULT_CAMERA_ZOOM;
 let pinchStartDistance = 0;
-let pinchStartZoom = 1.0;
+let pinchStartZoom = DEFAULT_CAMERA_ZOOM;
 let zoomBadgeTimeout = null;
 
 if (typeof window !== 'undefined') {
@@ -103,6 +105,7 @@ if (typeof window !== 'undefined') {
   window.__fitFrameToMax1080 = fitFrameToMax1080;
   window.__matchPlate = matchPlate;
   window.__getTargetPlates = () => targetPlates;
+  window.__DEFAULT_CAMERA_ZOOM = DEFAULT_CAMERA_ZOOM;
   window.__getZoomCapabilities = () => zoomCapabilities;
   window.__getCurrentZoom = () => currentZoom;
   window.__applyCameraZoom = (z) => applyCameraZoom(z);
@@ -121,6 +124,19 @@ if (typeof window !== 'undefined') {
   window.__checkIsIOS = checkIsIOS;
   window.__setIsIOS = (v) => { mockIsIOS = v; };
   window.__triggerManualDetection = () => triggerManualDetection();
+  window.__isCameraFrozen = () => isCameraFrozen;
+  window.__getFrozenFittedFrame = () => frozenFittedFrame;
+  window.__setFrozenFittedFrame = (f) => { frozenFittedFrame = f; };
+  window.__unfreezeCameraFeed = (play) => unfreezeCameraFeed(play);
+  window.__handleCameraTap = (x, y) => handleViewportTap(x, y);
+  window.__handleViewportTap = (x, y) => handleViewportTap(x, y);
+  window.__getLastTapDetection = () => lastTapDetection;
+  window.__getLastTapCropBoxes = () => lastTapCropBoxes;
+  window.__getStaticFittedFrame = () => staticFittedFrame;
+  window.__setStaticFittedFrame = (f) => { staticFittedFrame = f; };
+  window.__setIsStreaming = (v) => { isStreaming = v; };
+  window.__setActiveMode = (v) => { activeMode = v; };
+  window.__loadStaticImage = (url) => loadStaticImage(url);
 }
 let isStreaming = false;
 let mediaStream = null;
@@ -130,6 +146,15 @@ let lastProcessedTime = 0;
 let frameCount = 0;
 let fpsLastTime = performance.now();
 let activeMode = 'idle'; // 'camera', 'static', 'idle'
+
+// Camera freeze & tap-to-OCR state
+let isCameraFrozen = false;
+let frozenFittedFrame = null;
+let staticFittedFrame = null;
+let isTapOcrRunning = false;
+let lastTapPoint = null;
+let lastTapDetection = null;
+let lastTapCropBoxes = null;
 
 /**
  * Normalizes a plate string for reliable matching:
@@ -261,7 +286,7 @@ async function setupCameraDevices() {
 /**
  * Applies native camera zoom using MediaStreamTrack applyConstraints.
  */
-async function applyCameraZoom(zoomLevel) {
+async function applyCameraZoom(zoomLevel, showBadge = true) {
   if (!activeVideoTrack || !zoomCapabilities) return;
   const min = zoomCapabilities.min ?? 1.0;
   const max = zoomCapabilities.max ?? 1.0;
@@ -280,7 +305,9 @@ async function applyCameraZoom(zoomLevel) {
     console.warn('Native camera zoom error:', err);
   }
 
-  showZoomBadge(rounded);
+  if (showBadge) {
+    showZoomBadge(rounded);
+  }
 }
 
 function showZoomBadge(val) {
@@ -343,14 +370,21 @@ async function startCamera() {
 
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { ...videoConstraints, zoom: true },
+        video: { ...videoConstraints, zoom: DEFAULT_CAMERA_ZOOM },
         audio: false
       });
     } catch (e) {
-      mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: videoConstraints,
-        audio: false
-      });
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { ...videoConstraints, zoom: true },
+          audio: false
+        });
+      } catch (e2) {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: videoConstraints,
+          audio: false
+        });
+      }
     }
 
     // Inspect native camera hardware zoom capabilities
@@ -359,8 +393,7 @@ async function startCamera() {
       const caps = activeVideoTrack.getCapabilities();
       if (caps && 'zoom' in caps) {
         zoomCapabilities = caps.zoom;
-        const settings = activeVideoTrack.getSettings ? activeVideoTrack.getSettings() : {};
-        currentZoom = settings.zoom || zoomCapabilities.min || 1.0;
+        await applyCameraZoom(DEFAULT_CAMERA_ZOOM, false);
       } else {
         zoomCapabilities = null;
       }
@@ -381,6 +414,14 @@ async function startCamera() {
 
     isStreaming = true;
     activeMode = 'camera';
+    isCameraFrozen = false;
+    frozenFittedFrame = null;
+    lastTapPoint = null;
+    lastTapDetection = null;
+    lastTapCropBoxes = null;
+    if (btnResumeCamera) btnResumeCamera.style.display = 'none';
+    if (streamBadge) streamBadge.classList.remove('badge-frozen');
+
     document.body.classList.add('camera-active-mode');
     document.body.classList.remove('static-active-mode');
     idleOverlay.style.display = 'none';
@@ -430,6 +471,11 @@ async function startCamera() {
  * Stops camera streaming.
  */
 function stopCamera() {
+  if (isCameraFrozen) {
+    unfreezeCameraFeed(false);
+  }
+  lastTapCropBoxes = null;
+
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
@@ -439,7 +485,7 @@ function stopCamera() {
 
   activeVideoTrack = null;
   zoomCapabilities = null;
-  currentZoom = 1.0;
+  currentZoom = DEFAULT_CAMERA_ZOOM;
   hideZoomBadge();
 
   if (btnTapToDetect) {
@@ -483,6 +529,7 @@ let lastDetectionFoundTime = performance.now();
  */
 function requestRecognitionLoop() {
   if (!isStreaming || activeMode !== 'camera') return;
+  if (isCameraFrozen) return;
 
   // On iOS, automated background loop is disabled; detection is strictly user tap-to-trigger
   if (checkIsIOS()) return;
@@ -499,7 +546,7 @@ function requestRecognitionLoop() {
  * Fits picture to max 1080px in width or height, runs LPR Wasm in Web Worker, and draws bounding boxes.
  */
 async function processCurrentFrame() {
-  if (isProcessingFrame) return;
+  if (isProcessingFrame || isCameraFrozen) return;
   isProcessingFrame = true;
 
   const t0 = performance.now();
@@ -509,7 +556,7 @@ async function processCurrentFrame() {
     
     // Fit pictures to max 1080px in width or height
     const fitted = fitFrameToMax1080(source);
-    if (!fitted) {
+    if (!fitted || isCameraFrozen) {
       isProcessingFrame = false;
       return;
     }
@@ -553,8 +600,10 @@ async function processCurrentFrame() {
       }
     }
 
-    // Render bounding boxes with Green Tick or Red Cross
-    renderBoundingBoxes(detections, fitted, source);
+    // Render bounding boxes with Green Tick or Red Cross (unless camera feed was frozen by a user tap)
+    if (!isCameraFrozen) {
+      renderBoundingBoxes(detections, fitted, source);
+    }
   } catch (err) {
     console.error('Frame processing error:', err);
   } finally {
@@ -626,6 +675,403 @@ async function triggerManualDetection() {
 }
 
 /**
+ * Unfreezes the camera feed and resumes normal continuous recognition.
+ */
+function unfreezeCameraFeed(playVideo = true) {
+  if (!isCameraFrozen) return;
+
+  isCameraFrozen = false;
+  frozenFittedFrame = null;
+  lastTapPoint = null;
+  lastTapDetection = null;
+  lastTapCropBoxes = null;
+
+  if (btnResumeCamera) {
+    btnResumeCamera.style.display = 'none';
+  }
+  if (checkIsIOS() && btnTapToDetect) {
+    btnTapToDetect.style.display = 'flex';
+  }
+  if (streamBadgeText) {
+    streamBadgeText.textContent = checkIsIOS() ? 'TAP TO DETECT' : 'LIVE RECOGNIZING';
+  }
+  if (streamBadge) {
+    streamBadge.classList.remove('badge-frozen');
+  }
+
+  if (playVideo && activeMode === 'camera' && isStreaming && videoElement) {
+    videoElement.play().catch((err) => {
+      console.warn('Video resume play warning:', err);
+    });
+    engineStatusBadge.className = 'status-badge ready';
+    engineStatusText.textContent = checkIsIOS() ? 'Camera Ready • Tap to Detect' : 'Live Streaming & Recognizing';
+    clearOverlay();
+    requestRecognitionLoop();
+  }
+}
+
+/**
+ * Normalizes poly point representation ({x, y} or [x, y]) to [x, y].
+ */
+function normalizePolyPoint(pt) {
+  if (!pt) return [0, 0];
+  const x = pt.x !== undefined ? pt.x : (pt[0] !== undefined ? pt[0] : 0);
+  const y = pt.y !== undefined ? pt.y : (pt[1] !== undefined ? pt[1] : 0);
+  return [x, y];
+}
+
+/**
+ * Draws visual tap indicator ring and crosshairs at the user tap position.
+ */
+function drawTapMarker(ctx, screenX, screenY, success = true) {
+  ctx.save();
+  const color = success ? '#38bdf8' : '#f59e0b';
+  const fillColor = success ? 'rgba(56, 189, 248, 0.22)' : 'rgba(245, 158, 11, 0.22)';
+
+  ctx.strokeStyle = color;
+  ctx.fillStyle = fillColor;
+  ctx.lineWidth = 2.2;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10;
+
+  // Outer target ring
+  ctx.beginPath();
+  ctx.arc(screenX, screenY, 20, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Inner center dot
+  ctx.beginPath();
+  ctx.arc(screenX, screenY, 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+
+  // Crosshairs
+  ctx.beginPath();
+  ctx.moveTo(screenX - 28, screenY);
+  ctx.lineTo(screenX - 10, screenY);
+  ctx.moveTo(screenX + 10, screenY);
+  ctx.lineTo(screenX + 28, screenY);
+  ctx.moveTo(screenX, screenY - 28);
+  ctx.lineTo(screenX - 10, screenY);
+  ctx.moveTo(screenX + 10, screenY);
+  ctx.lineTo(screenX + 28, screenY);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * Draws immediate visual feedback at tap location while OCR inference is in progress,
+ * including the multi-scale candidate crop bounding boxes and the target ripple.
+ */
+function drawTapFeedbackOverlay(screenX, screenY, sampleBoxes, scaleX, scaleY, renderX, renderY) {
+  const cW = viewportContainer.clientWidth;
+  const cH = viewportContainer.clientHeight;
+  if (!cW || !cH) return;
+  overlayCanvas.width = cW;
+  overlayCanvas.height = cH;
+  const ctx = overlayCanvas.getContext('2d');
+  ctx.clearRect(0, 0, cW, cH);
+  if (sampleBoxes && scaleX && scaleY) {
+    drawTapCropBoxes(ctx, sampleBoxes, scaleX, scaleY, renderX, renderY);
+  }
+  drawTapMarker(ctx, screenX, screenY, true);
+}
+
+/**
+ * Handles user tap on camera feed or static image:
+ * - Camera mode:
+ *   a) Freezes camera feed on initial tap (videoElement.pause(), reveals Resume button at bottom of canvas).
+ *   b) Performs Paddle-only OCR around the site of the tap across multi-scale candidate crops.
+ *   c) Renders output bounding box and match status.
+ *   Subsequent taps do not unfreeze feed, but re-run Paddle OCR at the new tap site.
+ * - Static mode:
+ *   Performs step (b) and (c) WITHOUT showing the "Resume camera feed" button!
+ */
+async function handleViewportTap(clientX, clientY) {
+  if (activeMode !== 'camera' && activeMode !== 'static') return;
+  if (isTapOcrRunning) return;
+
+  const isCamera = activeMode === 'camera';
+
+  // 1. Camera mode: Freeze camera feed on initial tap and reveal Resume button at bottom
+  if (isCamera) {
+    if (!isStreaming) return;
+
+    if (!isCameraFrozen) {
+      isCameraFrozen = true;
+      try {
+        videoElement.pause();
+      } catch (_) {}
+
+      if (!frozenFittedFrame) {
+        frozenFittedFrame = fitFrameToMax1080(videoElement);
+      }
+
+      if (btnResumeCamera) {
+        btnResumeCamera.style.display = 'flex';
+      }
+      if (btnTapToDetect) {
+        btnTapToDetect.style.display = 'none';
+      }
+      if (streamBadgeText) {
+        streamBadgeText.textContent = 'FEED FROZEN • TAP TO OCR';
+      }
+      if (streamBadge) {
+        streamBadge.classList.add('badge-frozen');
+      }
+    }
+
+    if (!frozenFittedFrame) {
+      frozenFittedFrame = fitFrameToMax1080(videoElement);
+      if (!frozenFittedFrame) return;
+    }
+  }
+
+  // 2. Select target fitted frame and source element
+  let targetFittedFrame = null;
+  let source = null;
+
+  if (isCamera) {
+    targetFittedFrame = frozenFittedFrame;
+    source = videoElement;
+  } else {
+    // Static image mode: obtain fitted frame, do NOT show resume button
+    targetFittedFrame = fitFrameToMax1080(staticImageElement);
+    staticFittedFrame = targetFittedFrame;
+    source = staticImageElement;
+  }
+
+  if (!targetFittedFrame || !source) return;
+
+  isTapOcrRunning = true;
+
+  // 3. Map screen tap to container and fitted canvas coordinates
+  const containerRect = viewportContainer.getBoundingClientRect();
+  const cW = containerRect.width;
+  const cH = containerRect.height;
+  if (!cW || !cH) {
+    isTapOcrRunning = false;
+    return;
+  }
+
+  const clickX = clientX - containerRect.left;
+  const clickY = clientY - containerRect.top;
+
+  const sourceW = source.videoWidth || source.naturalWidth || source.width || targetFittedFrame.origWidth || 1;
+  const sourceH = source.videoHeight || source.naturalHeight || source.height || targetFittedFrame.origHeight || 1;
+
+  const scale = Math.min(cW / sourceW, cH / sourceH);
+  const renderW = sourceW * scale;
+  const renderH = sourceH * scale;
+  const renderX = (cW - renderW) / 2;
+  const renderY = (cH - renderH) / 2;
+
+  // Clamp screen tap to the rendered bounds
+  const tapScreenX = Math.max(renderX, Math.min(renderX + renderW, clickX));
+  const tapScreenY = Math.max(renderY, Math.min(renderY + renderH, clickY));
+
+  // Map to 1080p fitted canvas coordinates
+  const scaleFitX = targetFittedFrame.width / renderW;
+  const scaleFitY = targetFittedFrame.height / renderH;
+  const tapCanvasX = (tapScreenX - renderX) * scaleFitX;
+  const tapCanvasY = (tapScreenY - renderY) * scaleFitY;
+
+  lastTapPoint = { screenX: tapScreenX, screenY: tapScreenY, canvasX: tapCanvasX, canvasY: tapCanvasY };
+
+  const scaleX = renderW / targetFittedFrame.width;
+  const scaleY = renderH / targetFittedFrame.height;
+
+  // 4. Multi-scale candidate bounding box crops centered around the tap site:
+  // Samples single-line oblong aspects (compact, standard, large, wide) and 2-line stacked plates
+  const CROP_SIZES = [
+    { w: 220, h: 80, name: 'compact_1line' },
+    { w: 340, h: 120, name: 'standard_1line' },
+    { w: 460, h: 160, name: 'large_1line' },
+    { w: 260, h: 180, name: 'standard_2line' },
+    { w: 380, h: 250, name: 'large_2line' },
+    { w: 560, h: 220, name: 'wide_context' }
+  ];
+
+  const sampleBoxes = CROP_SIZES.map((cropSpec) => {
+    const cropW = Math.min(targetFittedFrame.width, cropSpec.w);
+    const cropH = Math.min(targetFittedFrame.height, cropSpec.h);
+    let cropX = Math.round(tapCanvasX - cropW / 2);
+    let cropY = Math.round(tapCanvasY - cropH / 2);
+    cropX = Math.max(0, Math.min(targetFittedFrame.width - cropW, cropX));
+    cropY = Math.max(0, Math.min(targetFittedFrame.height - cropH, cropY));
+    return {
+      x: cropX,
+      y: cropY,
+      w: cropW,
+      h: cropH,
+      name: cropSpec.name
+    };
+  });
+
+  lastTapCropBoxes = sampleBoxes;
+
+  // Draw tap ripple/marker and grey crop boxes immediately for responsive user feedback
+  drawTapFeedbackOverlay(tapScreenX, tapScreenY, sampleBoxes, scaleX, scaleY, renderX, renderY);
+
+  engineStatusBadge.className = 'status-badge active';
+  engineStatusText.textContent = 'Paddle-only OCR at tap site...';
+
+  const t0 = performance.now();
+
+  try {
+    const rawCandidates = [];
+
+    for (const box of sampleBoxes) {
+      const cropW = box.w;
+      const cropH = box.h;
+      const cropX = box.x;
+      const cropY = box.y;
+      const cropSpecName = box.name;
+
+      const cropCanvas = document.createElement('canvas');
+      cropCanvas.width = cropW;
+      cropCanvas.height = cropH;
+      const cropCtx = cropCanvas.getContext('2d');
+      cropCtx.drawImage(targetFittedFrame.canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+      // Perform Paddle-only OCR (Web Worker)
+      const directRes = await engine.predictDirectPaddle(cropCanvas);
+      const items = (directRes && directRes.results && directRes.results[0] && directRes.results[0].items) || [];
+      if (!items.length) continue;
+
+      const validItems = items.filter(it => it.text && it.text.trim().length > 0);
+      if (!validItems.length) continue;
+
+      // Sort items top-to-bottom, then left-to-right
+      validItems.sort((a, b) => {
+        const aPoly = (a.poly || []).map(normalizePolyPoint);
+        const bPoly = (b.poly || []).map(normalizePolyPoint);
+        const aY = aPoly.length >= 4 ? (aPoly[0][1] + aPoly[2][1]) / 2 : (aPoly[0] ? aPoly[0][1] : 0);
+        const bY = bPoly.length >= 4 ? (bPoly[0][1] + bPoly[2][1]) / 2 : (bPoly[0] ? bPoly[0][1] : 0);
+        const aH = aPoly.length >= 4 ? Math.abs(aPoly[2][1] - aPoly[0][1]) : 12;
+        const bH = bPoly.length >= 4 ? Math.abs(bPoly[2][1] - bPoly[0][1]) : 12;
+        const minH = Math.min(aH, bH);
+        if (Math.abs(aY - bY) > minH * 0.45) {
+          return aY - bY;
+        }
+        const aX = aPoly[0] ? aPoly[0][0] : 0;
+        const bX = bPoly[0] ? bPoly[0][0] : 0;
+        return aX - bX;
+      });
+
+      // Candidate 1: Multi-line combined (if multiple lines detected in the crop)
+      if (validItems.length > 1) {
+        const combinedText = validItems.map(it => it.text).join('').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (combinedText.length >= 3) {
+          const polys = validItems.map(it => (it.poly || []).map(normalizePolyPoint));
+          const firstPoly = polys[0];
+          const lastPoly = polys[polys.length - 1];
+          if (firstPoly.length === 4 && lastPoly.length === 4) {
+            const minX = Math.min(...polys.flatMap(p => [p[0][0], p[3][0]]));
+            const maxX = Math.max(...polys.flatMap(p => [p[1][0], p[2][0]]));
+            const rawQuad = [
+              [cropX + minX, cropY + firstPoly[0][1]],
+              [cropX + maxX, cropY + firstPoly[1][1]],
+              [cropX + maxX, cropY + lastPoly[2][1]],
+              [cropX + minX, cropY + lastPoly[3][1]]
+            ];
+            const avgScore = validItems.reduce((s, it) => s + (it.score || 0.8), 0) / validItems.length;
+            addCandidate(combinedText, rawQuad, avgScore, cropSpecName);
+          }
+        }
+      }
+
+      // Candidate 2+: Individual text items
+      for (const it of validItems) {
+        const text = it.text.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const normPoly = (it.poly || []).map(normalizePolyPoint);
+        if (text.length >= 3 && normPoly.length === 4) {
+          const rawQuad = normPoly.map(([px, py]) => [cropX + px, cropY + py]);
+          addCandidate(text, rawQuad, it.score || 0.8, cropSpecName);
+        }
+      }
+    }
+
+    function addCandidate(plateText, rawQuad, conf, cropName) {
+      const qcx = (rawQuad[0][0] + rawQuad[1][0] + rawQuad[2][0] + rawQuad[3][0]) / 4;
+      const qcy = (rawQuad[0][1] + rawQuad[1][1] + rawQuad[2][1] + rawQuad[3][1]) / 4;
+      const distFromTap = Math.hypot(qcx - tapCanvasX, qcy - tapCanvasY);
+
+      // Expand quad slightly by 15% for aesthetic bounding box framing
+      const expandedQuad = rawQuad.map(([px, py]) => [
+        qcx + (px - qcx) * 1.15,
+        qcy + (py - qcy) * 1.20
+      ]);
+
+      const matchRes = matchPlate(plateText, targetPlates);
+      // Pure proximity and OCR confidence ranking (no target list match bias, no plate length bias)
+      const rankScore = (conf * 200) - (distFromTap * 1.5);
+
+      rawCandidates.push({
+        text: plateText,
+        quad: expandedQuad,
+        score: conf,
+        minConf: conf,
+        matchRes,
+        distFromTap,
+        rankScore,
+        cropName,
+        qcx,
+        qcy
+      });
+    }
+
+    const t1 = performance.now();
+    const duration = Math.round(t1 - t0);
+    scanLatencyText.textContent = `${duration} ms (Tap OCR)`;
+
+    if (rawCandidates.length > 0) {
+      // Group by plate text and pick candidate with best rankScore
+      const candidateMap = new Map();
+      for (const cand of rawCandidates) {
+        const existing = candidateMap.get(cand.text);
+        if (!existing || cand.rankScore > existing.rankScore) {
+          candidateMap.set(cand.text, cand);
+        }
+      }
+      const sortedCandidates = Array.from(candidateMap.values())
+        .sort((a, b) => b.rankScore - a.rankScore);
+
+      const best = sortedCandidates[0];
+      lastTapDetection = best;
+
+      // Render the output with tick (✓) or cross (✗)
+      renderBoundingBoxes([best], targetFittedFrame, source);
+
+      // Draw tap marker on overlay canvas
+      const ctx = overlayCanvas.getContext('2d');
+      drawTapMarker(ctx, tapScreenX, tapScreenY, true);
+
+      const isMatch = best.matchRes.isMatch;
+      engineStatusBadge.className = isMatch ? 'status-badge ready' : 'status-badge active';
+      engineStatusText.textContent = `Tap OCR: ${best.text} (${Math.round(best.score * 100)}%) • ${isMatch ? 'Match ✓' : 'Not in list ✗'}`;
+    } else {
+      // No text detected across all crops: render grey candidate crop boxes and tap marker
+      renderBoundingBoxes([], targetFittedFrame, source);
+      const ctx = overlayCanvas.getContext('2d');
+      drawTapMarker(ctx, tapScreenX, tapScreenY, false);
+      engineStatusBadge.className = 'status-badge active';
+      engineStatusText.textContent = 'No plate text found at tap site • Tap directly on license plate';
+    }
+  } catch (err) {
+    console.error('Tap Paddle OCR error:', err);
+    engineStatusBadge.className = 'status-badge active';
+    engineStatusText.textContent = 'Tap OCR error, try again';
+  } finally {
+    isTapOcrRunning = false;
+  }
+}
+
+const handleCameraTap = handleViewportTap;
+
+/**
  * Clears the overlay canvas.
  */
 function clearOverlay() {
@@ -663,11 +1109,54 @@ function renderBoundingBoxes(detections, fitted, source) {
   const ctx = overlayCanvas.getContext('2d');
   ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-  if (!detections || detections.length === 0) return;
+  const hasDets = Array.isArray(detections) && detections.length > 0;
+  const hasYoloDets = detections && Array.isArray(detections.yoloDets) && detections.yoloDets.length > 0;
+  const hasTapCropBoxes = lastTapCropBoxes && lastTapCropBoxes.length > 0;
+  if (!hasDets && !hasYoloDets && !hasTapCropBoxes) return;
 
   // Scale factors from the 1080px fitted canvas coordinates to the displayed overlay
   const scaleX = renderW / fitted.width;
   const scaleY = renderH / fitted.height;
+
+  // 1. Render grey bounding boxes around YOLO-detected boundaries (underneath Paddle boundaries)
+  const renderedYoloKeys = new Set();
+  const yoloItems = [];
+
+  if (hasDets) {
+    for (const det of detections) {
+      if (det.yoloQuad) {
+        const key = `${Math.round(det.yoloQuad[0][0])}_${Math.round(det.yoloQuad[0][1])}`;
+        if (!renderedYoloKeys.has(key)) {
+          renderedYoloKeys.add(key);
+          yoloItems.push({ quad: det.yoloQuad, score: det.yoloScore || det.score });
+        }
+      }
+    }
+  }
+
+  if (hasYoloDets) {
+    for (const yd of detections.yoloDets) {
+      if (yd.quad) {
+        const key = `${Math.round(yd.quad[0][0])}_${Math.round(yd.quad[0][1])}`;
+        if (!renderedYoloKeys.has(key)) {
+          renderedYoloKeys.add(key);
+          yoloItems.push({ quad: yd.quad, score: yd.score });
+        }
+      }
+    }
+  }
+
+  for (const item of yoloItems) {
+    drawYoloBoundingBox(ctx, item.quad, item.score, scaleX, scaleY, renderX, renderY);
+  }
+
+  // 1b. Render grey candidate crop bounding boxes of various sizes (underneath Paddle boundaries)
+  if (hasTapCropBoxes) {
+    drawTapCropBoxes(ctx, lastTapCropBoxes, scaleX, scaleY, renderX, renderY);
+  }
+
+  // 2. Render Paddle boundaries (Green for match, Red for not in list) on top of the grey YOLO & crop boxes
+  if (!hasDets) return;
 
   // Sort detections: reds (non-matches) first, greens (matches) last,
   // so that any overlapping green will overlay a red
@@ -831,6 +1320,124 @@ function drawOrientedCorners(ctx, quad, color) {
 }
 
 /**
+ * Draws a subtle grey bounding box representing the raw YOLO detector candidate boundaries.
+ * Drawn underneath the colored Paddle OCR boundaries for visual alignment and debugging.
+ */
+function drawYoloBoundingBox(ctx, rawQuad, score, scaleX, scaleY, renderX, renderY) {
+  if (!rawQuad || rawQuad.length !== 4) return;
+  const quad = rawQuad.map(([qx, qy]) => [
+    renderX + qx * scaleX,
+    renderY + qy * scaleY
+  ]);
+
+  ctx.save();
+  // Sleek grey styling (slate-400) with dashed outline
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.85)';
+  ctx.lineWidth = 2.0;
+  ctx.setLineDash([5, 4]);
+  ctx.fillStyle = 'rgba(100, 116, 139, 0.12)';
+  ctx.shadowColor = 'rgba(15, 23, 42, 0.6)';
+  ctx.shadowBlur = 4;
+
+  ctx.beginPath();
+  ctx.moveTo(quad[0][0], quad[0][1]);
+  for (let i = 1; i < quad.length; i++) {
+    ctx.lineTo(quad[i][0], quad[i][1]);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw small "YOLO xx%" label badge at the bottom-left of the box
+  const xs = quad.map((p) => p[0]);
+  const ys = quad.map((p) => p[1]);
+  const minX = Math.min(...xs);
+  const maxY = Math.max(...ys);
+  const scorePercent = score ? Math.round(score * 100) : 0;
+  const tagText = scorePercent > 0 ? `YOLO ${scorePercent}%` : 'YOLO';
+
+  ctx.font = '600 10px "JetBrains Mono", monospace';
+  const tagTextW = ctx.measureText(tagText).width;
+  const tagPaddingX = 6;
+  const tagW = tagTextW + tagPaddingX * 2;
+  const tagH = 16;
+  const tagX = Math.max(4, minX);
+  const tagY = maxY + 3;
+
+  // Draw tag pill background
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.6)';
+  ctx.lineWidth = 1;
+  roundRect(ctx, tagX, tagY, tagW, tagH, 3);
+  ctx.fill();
+  ctx.stroke();
+
+  // Draw tag text
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillText(tagText, tagX + tagPaddingX, tagY + 11.5);
+  ctx.restore();
+}
+
+/**
+ * Draws grey bounding boxes representing the multi-scale candidate crops sampled around the tap site.
+ * Drawn underneath the colored Paddle OCR boundaries for visual debugging.
+ */
+function drawTapCropBoxes(ctx, boxes, scaleX, scaleY, renderX, renderY) {
+  if (!boxes || !boxes.length) return;
+
+  ctx.save();
+  // Sort from largest to smallest area so inner smaller boxes sit cleanly on top
+  const sortedBoxes = [...boxes].sort((a, b) => (b.w * b.h) - (a.w * a.h));
+
+  for (const box of sortedBoxes) {
+    const boxX = renderX + box.x * scaleX;
+    const boxY = renderY + box.y * scaleY;
+    const boxW = box.w * scaleX;
+    const boxH = box.h * scaleY;
+
+    // Sleek grey dashed styling (slate-400)
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.03)';
+    ctx.shadowColor = 'rgba(15, 23, 42, 0.5)';
+    ctx.shadowBlur = 3;
+
+    ctx.beginPath();
+    roundRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Small dimension tag at the top-left of each box: e.g. "220×80"
+    const tagText = `${box.w}×${box.h}`;
+    ctx.font = '600 9px "JetBrains Mono", monospace';
+    const tagTextW = ctx.measureText(tagText).width;
+    const tagPaddingX = 5;
+    const tagW = tagTextW + tagPaddingX * 2;
+    const tagH = 15;
+    const tagX = Math.max(renderX + 2, boxX + 3);
+    const tagY = Math.max(renderY + 2, boxY + 3);
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.6)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, tagX, tagY, tagW, tagH, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(tagText, tagX + tagPaddingX, tagY + tagH / 2);
+  }
+  ctx.restore();
+}
+
+/**
  * Helper to draw rounded rectangle.
  */
 function roundRect(ctx, x, y, w, h, r) {
@@ -944,6 +1551,9 @@ function setStaticZoom(newZoom) {
     staticPanX = 0.0;
     staticPanY = 0.0;
   }
+  lastTapCropBoxes = null;
+  lastTapDetection = null;
+  lastTapPoint = null;
   renderStaticZoomedFrame();
 }
 
@@ -954,6 +1564,9 @@ function setStaticPan(newPanX, newPanY) {
   if (clampedX === staticPanX && clampedY === staticPanY) return;
   staticPanX = clampedX;
   staticPanY = clampedY;
+  lastTapCropBoxes = null;
+  lastTapDetection = null;
+  lastTapPoint = null;
   renderStaticZoomedFrame();
 }
 
@@ -980,6 +1593,9 @@ async function loadStaticImage(url) {
   staticZoom = 1.0;
   staticPanX = 0.0;
   staticPanY = 0.0;
+  lastTapCropBoxes = null;
+  lastTapDetection = null;
+  lastTapPoint = null;
   if (staticZoomControls) staticZoomControls.style.display = 'flex';
   updateStaticZoomUi();
 
@@ -1025,8 +1641,23 @@ cameraSelect.addEventListener('change', () => {
 
 platesTextarea.addEventListener('input', () => {
   updateTargetPlates();
-  // Re-render current bounding boxes if image or video is active
-  if (activeMode !== 'idle') {
+  if (activeMode === 'camera' && isCameraFrozen && lastTapDetection && frozenFittedFrame) {
+    // If camera feed is frozen, immediately re-evaluate match status of current detection
+    lastTapDetection.matchRes = matchPlate(lastTapDetection.text, targetPlates);
+    renderBoundingBoxes([lastTapDetection], frozenFittedFrame, videoElement);
+    if (lastTapPoint) {
+      const ctx = overlayCanvas.getContext('2d');
+      drawTapMarker(ctx, lastTapPoint.screenX, lastTapPoint.screenY, true);
+    }
+  } else if (activeMode === 'static' && lastTapDetection && staticFittedFrame) {
+    // If static image has an active tap detection, re-evaluate match status
+    lastTapDetection.matchRes = matchPlate(lastTapDetection.text, targetPlates);
+    renderBoundingBoxes([lastTapDetection], staticFittedFrame, staticImageElement);
+    if (lastTapPoint) {
+      const ctx = overlayCanvas.getContext('2d');
+      drawTapMarker(ctx, lastTapPoint.screenX, lastTapPoint.screenY, true);
+    }
+  } else if (activeMode !== 'idle') {
     processCurrentFrame();
   }
 });
@@ -1097,6 +1728,14 @@ viewportContainer.addEventListener('touchmove', (e) => {
   }
 }, { passive: false });
 
+let lastViewportTapTime = 0;
+function handleViewportTouchOrClick(clientX, clientY) {
+  const now = performance.now();
+  if (now - lastViewportTapTime < 350) return;
+  lastViewportTapTime = now;
+  handleViewportTap(clientX, clientY);
+}
+
 viewportContainer.addEventListener('touchend', (e) => {
   if (e.touches.length === 0 && pinchStartDistance === 0) {
     const elapsed = performance.now() - touchStartTime;
@@ -1104,11 +1743,11 @@ viewportContainer.addEventListener('touchend', (e) => {
     if (changed) {
       const dist = Math.hypot(changed.clientX - touchStartX, changed.clientY - touchStartY);
       if (elapsed < 350 && dist < 15) {
-        // Clean single tap on screen
-        if (e.target.closest('button, select, input, label')) return;
-        if (activeMode === 'camera' && checkIsIOS()) {
+        // Clean single tap on screen (ignoring control buttons, selects, or static zoom controls)
+        if (e.target.closest('button, select, input, label, .static-zoom-controls')) return;
+        if (activeMode === 'camera' || activeMode === 'static') {
           e.preventDefault();
-          triggerManualDetection();
+          handleViewportTouchOrClick(changed.clientX, changed.clientY);
         }
       }
     }
@@ -1122,19 +1761,28 @@ viewportContainer.addEventListener('touchcancel', () => {
   pinchStartDistance = 0;
 });
 
-// Also support desktop mouse click on viewport when running in iOS mode
+// Also support desktop mouse click on viewport for both camera and static image mode
 viewportContainer.addEventListener('click', (e) => {
-  if (e.target.closest('button, select, input, label')) return;
-  if (activeMode === 'camera' && checkIsIOS()) {
-    triggerManualDetection();
+  if (e.target.closest('button, select, input, label, .static-zoom-controls')) return;
+  if (activeMode === 'camera' || activeMode === 'static') {
+    handleViewportTouchOrClick(e.clientX, e.clientY);
   }
 });
 
-// Manual shutter button for iOS
+// Resume Camera Feed button (visible when feed is frozen by user tap)
+if (btnResumeCamera) {
+  btnResumeCamera.addEventListener('click', (e) => {
+    e.stopPropagation();
+    unfreezeCameraFeed(true);
+  });
+}
+
+// Manual shutter button for iOS (runs tap OCR at center of viewport)
 if (btnTapToDetect) {
   btnTapToDetect.addEventListener('click', (e) => {
     e.stopPropagation();
-    triggerManualDetection();
+    const rect = viewportContainer.getBoundingClientRect();
+    handleViewportCameraTap(rect.left + rect.width / 2, rect.top + rect.height / 2);
   });
 }
 

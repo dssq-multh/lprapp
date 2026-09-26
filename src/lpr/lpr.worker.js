@@ -94,6 +94,7 @@ self.onmessage = async (event) => {
           type: 'readAllDone',
           id,
           detections,
+          yoloDets: engine.lastYoloDets || [],
           duration
         });
         break;

@@ -661,6 +661,59 @@ body.static-active-mode .camera-select-wrap {
   animation: pulse 1s infinite;
 }
 
+.stream-active-badge.badge-frozen {
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(15, 23, 42, 0.85);
+  color: #94a3b8;
+}
+
+.stream-active-badge.badge-frozen .pulsing-record-dot {
+  background-color: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: none;
+}
+
+/* Resume Camera Button (appears at bottom of canvas when feed is frozen by user tap) */
+.resume-camera-btn {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  background: rgba(16, 185, 129, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: 9999px;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.65), 0 0 20px rgba(16, 185, 129, 0.5);
+  cursor: pointer;
+  z-index: 60;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+
+.resume-camera-btn:hover {
+  background: rgba(16, 185, 129, 1);
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7), 0 0 24px rgba(16, 185, 129, 0.65);
+}
+
+.resume-camera-btn:active {
+  transform: translateX(-50%) scale(0.96);
+}
+
 /* Floating Pinch-to-Zoom Indicator Badge */
 .zoom-badge {
   position: absolute;

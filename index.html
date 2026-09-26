@@ -206,6 +206,14 @@
               <span id="streamBadgeText">LIVE RECOGNIZING</span>
             </div>
 
+            <!-- Resume Camera Feed Floating Button (when camera feed is frozen by user tap) -->
+            <button id="btnResumeCamera" class="resume-camera-btn" style="display:none;" aria-label="Resume camera feed">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Resume camera feed</span>
+            </button>
+
             <!-- Floating Pinch-to-Zoom Indicator Badge -->
             <div id="zoomBadge" class="zoom-badge" style="display:none;">
               <span id="zoomBadgeText">1.0×</span>
@@ -310,7 +318,7 @@
               <span class="comp-check">✓</span>
             </div>
             <div class="comp-info">
-              <div class="comp-name">YOLOv5n-OBB Detector</div>
+              <div class="comp-name">YOLOv11n-INT8 Detector</div>
               <div class="comp-desc" id="compDescYolo">Loading license plate detector...</div>
             </div>
           </div>

@@ -140,14 +140,14 @@ function preprocessPlateCrop(sourceCanvas, box, quad) {
   }
   const isSquare = aspect < 2.0;
   const padX = isSquare ? Math.max(4, Math.round(box.width * 0.08)) : Math.max(8, Math.round(box.width * 0.15));
-  const padY = Math.max(4, Math.round(box.height * 0.08));
+  const padY = isSquare ? Math.max(6, Math.round(box.height * 0.14)) : Math.max(4, Math.round(box.height * 0.08));
   const sx = Math.max(0, box.left - padX);
   const sy = Math.max(0, box.top - padY);
   const sw = Math.min(sourceCanvas.width - sx, box.width + padX * 2);
   const sh = Math.min(sourceCanvas.height - sy, box.height + padY * 2);
 
-  // Scale crop reasonably (up to 2x, capped to max height ~72px to avoid blur)
-  const scaleFactor = Math.max(1, Math.min(2.0, 72 / Math.max(1, sh)));
+  // Scale crop reasonably (up to 2x, capped to max height ~72px for single-line, 96px for 2-line stacked)
+  const scaleFactor = Math.max(1, Math.min(2.0, (isSquare ? 96 : 72) / Math.max(1, sh)));
   const targetW = Math.round(sw * scaleFactor);
   const targetH = Math.round(sh * scaleFactor);
 
@@ -180,13 +180,13 @@ export class LprEngine {
   }
 
   async createSpotterSession(wantGpu) {
-    const spotterUrl = `${this.base}models/license_plate_detector_yolov8n_int8.onnx`;
+    const spotterUrl = `${this.base}models/license_plate_detector_yolov11n_int8.onnx`;
 
     if (wantGpu) {
       // First try disabled, then basic optimization to avoid Conv fusion layout bugs on WebGPU
       for (const optLevel of ['disabled', 'basic', 'all']) {
         try {
-          console.log(`Validating YOLOv8n-INT8 on WebGPU (graphOptimizationLevel: ${optLevel})...`);
+          console.log(`Validating YOLOv11n-INT8 on WebGPU (graphOptimizationLevel: ${optLevel})...`);
           const session = await ort.InferenceSession.create(spotterUrl, {
             executionProviders: ['webgpu', 'wasm'],
             graphOptimizationLevel: optLevel,
@@ -209,7 +209,7 @@ export class LprEngine {
       intraOpNumThreads: 1,
       interOpNumThreads: 1,
     });
-    console.log('YOLOv8n-INT8 initialized on WASM (1 CPU)');
+    console.log('YOLOv11n-INT8 initialized on WASM (1 CPU)');
     return { session: wasmSession, enableGpu: false };
   }
 
@@ -256,7 +256,7 @@ export class LprEngine {
     ort.env.wasm.numThreads = 1;
 
     const providerName = this.enableGpu ? 'WebGPU' : 'WASM';
-    if (onStatus) onStatus(`Loading license plate detector (YOLOv5n-OBB on ${providerName})...`);
+    if (onStatus) onStatus(`Loading license plate detector (YOLOv11n-INT8 on ${providerName})...`);
     const { session, enableGpu } = await this.createSpotterSession(this.enableGpu);
     this.spotter = session;
     this.enableGpu = enableGpu;
@@ -311,7 +311,7 @@ export class LprEngine {
       });
     } catch (err) {
       if (this.enableGpu) {
-        console.warn('YOLOv8 spotter run failed on WebGPU at runtime, falling back to WASM:', err);
+        console.warn('YOLOv11 spotter run failed on WebGPU at runtime, falling back to WASM:', err);
         const { session, enableGpu } = await this.createSpotterSession(false);
         this.spotter = session;
         this.enableGpu = enableGpu;
@@ -477,6 +477,13 @@ export class LprEngine {
       .slice(0, maxBoxes);
 
     const out = [];
+    const allYoloCandidates = prioritizedDets.map(d => ({
+      score: d.score,
+      box: d.box,
+      quad: d.quad,
+      aspect: d.aspect
+    }));
+    this.lastYoloDets = allYoloCandidates;
 
     for (const d of prioritizedDets) {
       const ocrResult = await this.readWithOcr(image, d.box, d.score, d.quad);
@@ -486,6 +493,10 @@ export class LprEngine {
         score: d.score,
         box: d.box,
         quad: ocrResult.refinedQuad || d.quad,
+        yoloBox: d.box,
+        yoloQuad: d.quad,
+        yoloScore: d.score,
+        hasPaddleQuad: !!ocrResult.refinedQuad,
         text: ocrResult.text || '',
         minConf: ocrResult.minConf || d.score,
         confident: ocrResult.confident !== false
@@ -493,6 +504,7 @@ export class LprEngine {
     }
 
     out.sort((a, b) => b.score - a.score);
+    out.yoloDets = allYoloCandidates;
     return out;
   }
 }

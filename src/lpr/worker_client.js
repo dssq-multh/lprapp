@@ -112,7 +112,11 @@ export class LprWorkerClient {
 
     return new Promise(async (resolve, reject) => {
       this.pending.set(id, {
-        resolve: (data) => resolve(data.detections || []),
+        resolve: (data) => {
+          const res = data.detections || [];
+          res.yoloDets = data.yoloDets || [];
+          resolve(res);
+        },
         reject
       });
 
